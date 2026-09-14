@@ -1,6 +1,6 @@
 {
   "paris": { "cities": { "巴黎": [] } },
-  "tokyo": { "cities": { "东京": [] } },
+  "japan": { "cities": { "东京": [], "大阪": [] } },
   "shanghai": { "cities": { "上海": [] } },
   "jeju": { "cities": { "济州岛": [] } },
   "barcelona": { "cities": { "巴塞罗那": [] } },
