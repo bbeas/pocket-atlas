@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#8dcec0" />
+    <meta name="description" content="沿途，一本在积木地球上慢慢展开的私人旅行手记。" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d4a57'/%3E%3Ccircle cx='16' cy='16' r='10' fill='%238dcec0'/%3E%3Cpath d='M7 16h18M16 6v20' stroke='%23fff5dc' stroke-width='2'/%3E%3C/svg%3E" />
+    <title>沿途 — 私人旅行手记</title>
+    <link rel="stylesheet" href="./travel-ui.css">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Serif+SC:wght@500&display=swap');
+      :root { --ink:#173c47; --paper:#fff7df; --aqua:#94ded0; --coral:#ee8569; --sun:#f7c85b; }
+      * { box-sizing:border-box; } html,body { margin:0; width:100%; height:100%; overflow:hidden; }
+      body { background:radial-gradient(circle at 13% 18%,#fff8e5 0 7%,transparent 29%), radial-gradient(circle at 86% 16%,#c8f0e5 0,transparent 37%), linear-gradient(135deg,#a6e2d4,#77cbbb); color:var(--ink); font-family:'DM Mono',monospace; }
+      canvas { position:fixed; inset:0; width:100%!important; height:100%!important; cursor:grab; } canvas:active { cursor:grabbing; }
+      header { position:fixed; z-index:5; top:0; inset-inline:0; height:82px; display:flex; align-items:center; justify-content:space-between; padding:0 4.5vw; pointer-events:none; }
+      .brand { display:flex; align-items:center; gap:19px; color:#214b4b; }
+      .brand-title { margin:0; font-family:'Noto Serif SC','Songti SC',serif; font-size:2rem; line-height:1.4; font-weight:500; letter-spacing:.2em; white-space:nowrap; }
+      .brand-caption { border-left:1px solid #74958b; padding:3px 0 3px 18px; font-size:11px; line-height:1.65; letter-spacing:.13em; color:#45685f; }
+      nav { pointer-events:auto; display:flex; gap:8px; background:rgba(255,247,223,.62); backdrop-filter:blur(12px); border:1px solid rgba(23,60,71,.13); padding:6px; border-radius:999px; box-shadow:0 10px 30px rgba(32,98,91,.1); }
+      nav a { color:var(--ink); text-decoration:none; padding:8px 13px; font-size:12px; border-radius:999px; transition:.2s; } nav a:hover,nav a:first-child { background:#fff8e7; }
+      canvas { touch-action:none; outline:none; }
+      canvas:focus,canvas:focus-visible { outline:none; }
+      .tooltip { position:fixed; z-index:8; display:none; transform:translate(-50%,-135%); padding:9px 12px; background:#174451; color:#fff9e8; border-radius:8px; font-size:11px; pointer-events:none; box-shadow:0 8px 18px rgba(20,65,75,.2); }
+      .tooltip::after { content:''; position:absolute; left:50%; bottom:-5px; width:10px; height:10px; background:#174451; transform:translateX(-50%) rotate(45deg); }
+      @media (max-width:700px) { header { height:78px; padding:0 20px; } .brand{gap:12px}.brand-title{font-size:1.7rem}.brand-caption{font-size:11px;padding-left:12px;letter-spacing:.07em} nav a{padding:8px;font-size:12px} }
+      @media (max-width:480px) { .brand-caption {display:none} }
+    </style>
+  </head>
+  <body>
+    <header><div class="brand"><h1 class="brand-title">沿途</h1><span class="brand-caption">A PERSONAL<br>TRAVEL JOURNAL</span></div><nav aria-label="主菜单"><a href="#" data-explore>探索</a><button type="button" data-places>足迹</button><a href="#">关于</a></nav></header>
+    <div class="tooltip" id="tooltip" role="tooltip"></div>
+    <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}</script>
+    <script type="module">
+      import * as THREE from 'three';
+      import { antarcticaCoastline } from './antarctica-coastline.js';
+      import { createTravelUI } from './travel-ui.js';
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.OrthographicCamera(-8, 8, 6.5, 0, .1, 60);
+      camera.position.set(0, 0, 20);
+      camera.lookAt(0, 0, 0);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      const canvas = renderer.domElement;
+      canvas.tabIndex = 0;
+      canvas.setAttribute('aria-label', '积木地球：拖动或使用方向键旋转，点击去过的地点查看相册。也可通过足迹菜单选择地点，按 Escape 返回地球。');
+      document.body.prepend(canvas);
+      scene.add(new THREE.HemisphereLight(0xfff7e4, 0x417e83, 2));
+      const sun = new THREE.DirectionalLight(0xffebca, 3);
+      sun.position.set(-7, 10, 12);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 9, bottom: -8, near: .5, far: 40 });
+      sun.shadow.normalBias = .018;
+      sun.shadow.bias = -.00008;
+      scene.add(sun);
+      const fill = new THREE.DirectionalLight(0xb9f0ed, .7);
+      fill.position.set(7, 3, 5);
+      scene.add(fill);
+      const world = new THREE.Group();
+      world.rotation.set(.13, -.04, -.08);
+      scene.add(world);
+
+      // Each ocean and land cell is an individual small brick, batched into two draw calls.
+      const R = 5.15, ROWS = 108, COLUMNS = 216, ANCHOR = R + .255;
+      const radians = THREE.MathUtils.degToRad;
+      const regions = [
+        [[-168,71],[-149,72],[-132,68],[-126,59],[-113,60],[-98,72],[-81,73],[-61,57],[-55,51],[-66,44],[-80,25],[-88,21],[-97,16],[-106,23],[-116,31],[-125,49],[-141,60],[-166,60]],
+        [[-98,22],[-87,22],[-82,12],[-77,8],[-82,7],[-90,15]],
+        [[-81,12],[-71,12],[-60,7],[-50,1],[-35,-6],[-40,-22],[-51,-30],[-65,-55],[-73,-52],[-76,-30],[-81,-5]],
+        [[-53,60],[-42,60],[-20,75],[-27,83],[-49,83],[-62,76]],
+        [[-17,36],[-5,36],[10,37],[24,32],[34,31],[43,12],[51,11],[43,-1],[40,-15],[32,-29],[19,-35],[11,-22],[9,-5],[-5,5],[-17,15]],
+        [[-10,36],[-10,44],[-2,49],[8,54],[5,60],[19,71],[30,70],[30,59],[42,55],[42,42],[27,40],[22,35],[13,43],[4,43]],
+        [[30,70],[60,74],[105,77],[140,72],[179,66],[179,54],[158,60],[146,47],[134,44],[127,34],[120,22],[110,20],[109,9],[103,1],[98,7],[96,20],[88,22],[80,7],[73,18],[67,25],[58,24],[50,13],[43,14],[35,31],[28,40],[42,50]],
+        [[112,-11],[132,-11],[140,-16],[151,-24],[153,-37],[137,-39],[127,-32],[114,-35]],
+        [[46,-13],[51,-16],[49,-25],[44,-26],[43,-18]],
+        [[130,31],[134,34],[137,37],[141,40],[145,45],[142,46],[137,41],[133,35]],
+        [[-9,50],[-3,50],[0,59],[-5,59]], [[-25,63],[-13,64],[-16,67],[-24,67]],
+        [[95,5],[106,-5],[104,-7],[98,-2]], [[108,6],[118,6],[119,-3],[109,-4]],
+        [[130,-2],[149,-5],[150,-10],[136,-8]], [[166,-34],[179,-39],[174,-47],[168,-46]],
+      ];
+      function inside(lon, lat, polygon) {
+        let yes = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+          const [xi, yi] = polygon[i], [xj, yj] = polygon[j];
+          if ((yi > lat) !== (yj > lat) && lon < (xj-xi)*(lat-yi)/(yj-yi)+xi) yes = !yes;
+        }
+        return yes;
+      }
+      const palettes = {
+        sea: [0x348faa,0x439eb6,0x59b7c5,0x388ca9,0x69bdc8,0x4fa7b9],
+        green: [0x78b54e,0x8ec55e,0x69a448,0xa2c968,0x599449],
+        sand: [0xe5b955,0xf0c568,0xd6aa4a,0xf3d386],
+        ice: [0xfff8e5,0xf1eedc,0xdde9df],
+      };
+      // Stylized river courses, expressed as longitude/latitude paths.
+      const rivers = [
+        [[96,33],[102,30],[109,30],[114,29],[119,31],[122,31]],
+        [[31,30],[31,23],[33,17],[32,10],[33,3]],
+        [[-75,-5],[-69,-4],[-62,-3],[-54,-2],[-49,-1]],
+        [[-94,47],[-92,41],[-90,36],[-91,31],[-89,29]],
+        [[84,31],[82,28],[86,26],[91,24]],
+        [[29,57],[39,56],[47,52],[46,47]],
+        [[23,-9],[27,-4],[22,1],[18,-1],[15,-5]],
+      ];
+      function pathDistance(lat, lon, path) {
+        const stretch = Math.cos(radians(lat));
+        let distance = Infinity;
+        for (let i=1;i<path.length;i++) {
+          const a=path[i-1], b=path[i];
+          const dx=(b[0]-a[0])*stretch, dy=b[1]-a[1];
+          const px=(lon-a[0])*stretch, py=lat-a[1];
+          const t=THREE.MathUtils.clamp((px*dx+py*dy)/(dx*dx+dy*dy),0,1);
+          distance=Math.min(distance,Math.hypot(px-t*dx,py-t*dy));
+        }
+        return distance;
+      }
+      function sample(lat, lon) {
+        const antarctic = lat < -60 && antarcticaCoastline.some(rings=>
+          inside(lon,lat,rings[0])&&!rings.slice(1).some(hole=>inside(lon,lat,hole)));
+        const ice = lat > 77 || antarctic || inside(lon, lat, regions[3]);
+        const land = ice || regions.some(p => inside(lon, lat, p));
+        const sand = land && !ice && ((lat > 13 && lat < 32 && lon > -18 && lon < 64) || (lat < -18 && lat > -32 && lon > 115 && lon < 145));
+        const river = land && !ice && rivers.some(path=>pathDistance(lat,lon,path)<1.15);
+        return { land, ice, river, palette: river ? [0x328fa6,0x58b8c7,0x66c4cd] : ice ? palettes.ice : sand ? palettes.sand : land ? palettes.green : palettes.sea };
+      }
+      const cells = [];
+      for (let row = 0; row < ROWS; row++) {
+        const lat = -90 + (row + .5) * 180 / ROWS;
+        const count = Math.max(6, Math.round(COLUMNS * Math.cos(radians(lat))));
+        for (let col = 0; col < count; col++) {
+          const lon = -180 + (col + .5) * 360 / count;
+          cells.push({ lat, lon, width: 2*Math.PI*R*Math.cos(radians(lat))/count, ...sample(lat,lon) });
+        }
+      }
+      const surfaceMaterial = new THREE.MeshStandardMaterial({ roughness: .69, metalness: 0 });
+      const blocks = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1), surfaceMaterial, cells.length);
+      const studs = new THREE.InstancedMesh(new THREE.CylinderGeometry(.040,.042,.032,12), surfaceMaterial, cells.length);
+      blocks.castShadow = blocks.receiveShadow = true;
+      studs.castShadow = studs.receiveShadow = true;
+      const dummy = new THREE.Object3D(), basis = new THREE.Matrix4();
+      const up = new THREE.Vector3(), east = new THREE.Vector3(), south = new THREE.Vector3();
+      const color = new THREE.Color();
+      function orient(group, lat, lon, radius) {
+        up.setFromSphericalCoords(1, radians(90-lat), radians(lon));
+        east.set(Math.cos(radians(lon)), 0, -Math.sin(radians(lon)));
+        south.crossVectors(east, up).normalize();
+        basis.makeBasis(east, up, south);
+        group.quaternion.setFromRotationMatrix(basis);
+        group.position.copy(up).multiplyScalar(radius);
+        return group;
+      }
+      cells.forEach((cell, index) => {
+        const seed = Math.sin(index * 127.1 + 311.7) * 43758.5453;
+        const noise = seed - Math.floor(seed);
+        const height = cell.river ? .12 : cell.land ? .145 + Math.floor(noise*3)*.025 : .075 + Math.floor(noise*3)*.014;
+        cell.height=height;
+        cell.normal=new THREE.Vector3().setFromSphericalCoords(1,radians(90-cell.lat),radians(cell.lon));
+        orient(dummy, cell.lat, cell.lon, R + height/2);
+        dummy.scale.set(cell.width*.97, height, Math.PI*R/ROWS*.97);
+        dummy.updateMatrix();
+        blocks.setMatrixAt(index, dummy.matrix);
+        color.setHex(cell.palette[Math.floor(noise*cell.palette.length)]);
+        blocks.setColorAt(index, color);
+        orient(dummy, cell.lat, cell.lon, R + height + .016);
+        dummy.scale.set(1,1,1);
+        dummy.updateMatrix();
+        studs.setMatrixAt(index, dummy.matrix);
+        studs.setColorAt(index, color);
+      });
+      world.add(blocks, studs);
+      const core = new THREE.Mesh(new THREE.SphereGeometry(R-.025,96,64), new THREE.MeshStandardMaterial({color:0x367e91,roughness:.85}));
+      world.add(core);
+      canvas.dataset.brickCount = String(cells.length);
+
+      // Extend the existing spherical grid up to the underside of each load-bearing plate.
+      // The dot product solves the radial distance to a tangent plane, including its curved edges.
+      let foundationCells=0;
+      const foundationInverse=new THREE.Quaternion(), localCell=new THREE.Vector3();
+      function fitFoundation(group,halfWidth,halfDepth,bottomY,contacts=null,groundColor=null) {
+        foundationInverse.copy(group.quaternion).invert();
+        const normal=group.position.clone().normalize();
+        const planeDistance=group.position.length()+bottomY;
+        for(let i=0;i<cells.length;i++) {
+          const cell=cells[i],alignment=cell.normal.dot(normal);
+          if(alignment<.97)continue;
+          const radius=planeDistance/alignment;
+          localCell.copy(cell.normal).multiplyScalar(radius).sub(group.position).applyQuaternion(foundationInverse);
+          // Include cells intersecting a plate edge, so no corner is left unsupported.
+          const margin=cell.width*.52;
+          if(Math.abs(localCell.x)>halfWidth+margin || Math.abs(localCell.z)>halfDepth+margin)continue;
+          const touches=(box,padding)=>localCell.x>=box.min.x-padding && localCell.x<=box.max.x+padding &&
+            localCell.z>=box.min.z-padding && localCell.z<=box.max.z+padding;
+          if(contacts && !contacts.some(box=>touches(box,margin)))continue;
+          const height=Math.max(cell.height,radius-R+.009);
+          orient(dummy,cell.lat,cell.lon,R+height/2);
+          dummy.scale.set(cell.width*.985,height,Math.PI*R/ROWS*.985);
+          dummy.updateMatrix();blocks.setMatrixAt(i,dummy.matrix);
+          if(groundColor!==null || !contacts || !cell.land)blocks.setColorAt(i,new THREE.Color(groundColor??(cell.ice?0xe2e7d7:0x85ad61)));
+          cell.height=height;
+          // Covered studs must not poke through buildings or make them appear to balance on bumps.
+          orient(dummy,cell.lat,cell.lon,R+height+.016);
+          const covered=contacts?contacts.some(box=>touches(box,.045)):
+            Math.abs(localCell.x)<halfWidth+margin*.25 && Math.abs(localCell.z)<halfDepth+margin*.25;
+          dummy.scale.setScalar(covered?0:1);
+          dummy.updateMatrix();studs.setMatrixAt(i,dummy.matrix);
+          if(groundColor!==null || !contacts || !cell.land)studs.setColorAt(i,new THREE.Color(groundColor??(cell.ice?0xe2e7d7:0x85ad61)));
+          foundationCells++;
+        }
+      }
+
+      const materials = {};
+      function material(hex) {
+        return materials[hex] ||= new THREE.MeshStandardMaterial({ color:hex, roughness:.65 });
+      }
+      const boxGeometry = new THREE.BoxGeometry(1,1,1);
+      const studGeometry = new THREE.CylinderGeometry(.045,.048,.035,10);
+      function brick(parent,x,y,z,w,h,d,hex,withStuds=false) {
+        const piece = new THREE.Group();
+        piece.position.set(x,y,z);
+        piece.userData.isBrick = true;
+        const mesh = new THREE.Mesh(boxGeometry,material(hex));
+        mesh.scale.set(w,h,d);
+        mesh.castShadow = mesh.receiveShadow = true;
+        piece.add(mesh); parent.add(piece);
+        if (withStuds) {
+          const nx = Math.max(1,Math.round(w/.17)), nz = Math.max(1,Math.round(d/.17));
+          for(let ix=0;ix<nx;ix++) for(let iz=0;iz<nz;iz++) {
+            const stud = new THREE.Mesh(studGeometry,material(hex));
+            stud.position.set((ix-(nx-1)/2)*w/nx,h/2+.018,(iz-(nz-1)/2)*d/nz);
+            stud.castShadow=true; piece.add(stud);
+          }
+        }
+        return piece;
+      }
+      function tree(parent,x,z,size=.8) {
+        const tree = new THREE.Group();
+        tree.position.set(x,0,z); tree.scale.setScalar(size); parent.add(tree);
+        brick(tree,0,.15,0,.055,.3,.055,0x80583e);
+        for(let i=0;i<4;i++) brick(tree,0,.28+i*.095,0,.33-i*.07,.085,.33-i*.07, i%2?0x438853:0x367b51,true);
+      }
+      const landmarks = [], landmarkHitboxes = [];
+      // Geographic coordinates remain separate from gently separated display positions.
+      // The UK groups two nearby cities; these stable member IDs can later own photo albums.
+      const destinations = [
+        {id:'paris',name:'巴黎',lat:48.86,lon:2.29,type:'tower',width:.92,depth:.76,cities:['巴黎']},
+        {id:'tokyo',name:'东京',lat:35.66,lon:139.745,type:'tokyo-tower',width:1.10,depth:.95,cities:['东京']},
+        {id:'new-york',name:'纽约',lat:40.69,lon:-74.04,type:'statue',width:1.0,depth:.82,cities:['纽约']},
+        {id:'cairo',name:'开罗',lat:29.98,lon:31.13,type:'pyramid',width:1.10,depth:.95,cities:['开罗']},
+        {id:'shanghai',name:'上海',lat:31.24,lon:121.50,type:'shanghai',width:1.10,depth:.95,cities:['上海']},
+        {id:'jeju',name:'济州岛',lat:33.36,lon:126.53,type:'jeju',width:.72,depth:.65,cities:['济州岛']},
+        {id:'barcelona',name:'巴塞罗那',lat:41.40,lon:2.17,type:'barcelona',width:.88,depth:.76,cities:['巴塞罗那']},
+        {id:'iceland',name:'冰岛',lat:64.15,lon:-21.94,type:'iceland',width:.86,depth:.72,cities:['冰岛']},
+        {id:'united-kingdom',name:'英国',lat:54.6,lon:-3.4,type:'britain',width:.92,depth:.78,cities:['伦敦','爱丁堡']},
+        {id:'singapore',name:'新加坡',lat:1.28,lon:103.86,type:'singapore',width:1.25,depth:.85,cities:['新加坡']},
+        {id:'maldives',name:'马尔代夫',lat:4.17,lon:73.51,type:'maldives',width:1.18,depth:.95,cities:['马尔代夫']},
+      ];
+      const visitedPlaces=new Set(['paris','tokyo','shanghai','jeju','barcelona','iceland','united-kingdom','singapore','maldives']);
+      for(const place of destinations) {
+        place.visited=visitedPlaces.has(place.id);
+        place.anchor=new THREE.Vector3().setFromSphericalCoords(1,radians(90-place.lat),radians(place.lon));
+        place.display=place.anchor.clone();
+        place.footprint=Math.hypot(place.width,place.depth)/2;
+      }
+      for(let iteration=0;iteration<160;iteration++) {
+        let maximumOverlap=0;
+        for(let i=0;i<destinations.length;i++)for(let j=i+1;j<destinations.length;j++) {
+          const a=destinations[i],b=destinations[j];
+          const separation=a.display.distanceTo(b.display)*ANCHOR;
+          const required=a.footprint+b.footprint+.10;
+          if(separation>=required)continue;
+          const overlap=required-separation;maximumOverlap=Math.max(maximumOverlap,overlap);
+          const direction=a.display.clone().sub(b.display).normalize();
+          a.display.addScaledVector(direction,overlap/ANCHOR*.51).normalize();
+          b.display.addScaledVector(direction,-overlap/ANCHOR*.51).normalize();
+        }
+        if(maximumOverlap<.001)break;
+      }
+      const landmarkLocations=destinations.map(place=>{
+        place.displayLat=90-THREE.MathUtils.radToDeg(Math.acos(place.display.y));
+        place.displayLon=THREE.MathUtils.radToDeg(Math.atan2(place.display.x,place.display.z));
+        return [place.displayLat,place.displayLon];
+      });
+      canvas.dataset.destinations=JSON.stringify(destinations.map(({id,name,lat,lon,displayLat,displayLon,cities,visited})=>({id,name,lat,lon,displayLat,displayLon,cities,visited})));
+      const hitMaterial = new THREE.MeshBasicMaterial({visible:false});
+      function landmark(place) {
+        const {name,type,width,depth,displayLat:lat,displayLon:lon}=place;
+        const g = new THREE.Group();
+        function beam(a,b,w,hex) {
+          const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b);
+          const mid=start.clone().add(end).multiplyScalar(.5);
+          const part=brick(g,mid.x,mid.y,mid.z,w,start.distanceTo(end),w,hex);
+          part.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),end.sub(start).normalize());
+          return part;
+        }
+        if(type==='tower') {
+          const bronze=0x9c6749,highlight=0xc99762;
+          const levels=[.09,.20,.31,.42,.53,.64,.75,.86,.97,1.08,1.19,1.29];
+          const spreads=[.245,.217,.182,.15,.125,.103,.086,.07,.056,.044,.031,.023];
+          for(let i=0;i<levels.length-1;i++) {
+            const y=levels[i],nextY=levels[i+1],s=spreads[i],n=spreads[i+1];
+            for(const x of [-1,1])for(const z of [-1,1])beam([x*s,y,z*s],[x*n,nextY,z*n],.026,bronze);
+            // Cross-bracing on all four faces, with open archways at the base.
+            if(i>1)for(const side of [-1,1]) {
+              beam([-s,y,side*s],[n,nextY,side*n],.013,highlight);
+              beam([s,y,side*s],[-n,nextY,side*n],.013,bronze);
+              beam([side*s,y,-s],[side*n,nextY,n],.013,highlight);
+              beam([side*s,y,s],[side*n,nextY,-n],.013,bronze);
+            }
+          }
+          for(const side of [-1,1]) {
+            const arch=[[-.23,.11],[-.19,.23],[-.11,.30],[0,.33],[.11,.30],[.19,.23],[.23,.11]];
+            for(let i=1;i<arch.length;i++) {
+              beam([arch[i-1][0],arch[i-1][1],side*.19],[arch[i][0],arch[i][1],side*.19],.023,bronze);
+              beam([side*.19,arch[i-1][1],arch[i-1][0]],[side*.19,arch[i][1],arch[i][0]],.023,bronze);
+            }
+          }
+          for(const [y,w] of [[.42,.34],[.75,.23],[1.28,.10]]) {
+            brick(g,0,y,0,w,.035,w,highlight,true);
+            for(const x of [-w*.45,w*.45])for(const z of [-w*.45,w*.45])brick(g,x,y+.043,z,.012,.06,.012,bronze);
+          }
+          brick(g,0,1.34,0,.062,.07,.062,bronze,true);
+          brick(g,0,1.455,0,.012,.17,.012,bronze);
+        } else if(type==='tokyo-tower') {
+          const vermilion=0xdf513b,ivory=0xfff1d4;
+          function beam(a,b,width,hex) {
+            const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b);
+            const mid=start.clone().add(end).multiplyScalar(.5);
+            const part=brick(g,mid.x,mid.y,mid.z,width,start.distanceTo(end),width,hex);
+            part.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),end.sub(start).normalize());
+          }
+          // Four splayed lattice legs, two observation decks, and a striped aerial.
+          for(let i=0;i<9;i++) {
+            const y=.105+i*.09,spread=.255-i*.023,next=spread-.023;
+            const hex=i<5||i===7?vermilion:ivory;
+            for(const x of [-1,1])for(const z of [-1,1]) {
+              beam([x*spread,y,z*spread],[x*next,y+.094,z*next],.042,hex);
+            }
+            for(const side of [-1,1]) {
+              beam([-spread,y,side*spread],[next,y+.09,side*next],.018,hex);
+              beam([side*spread,y,-spread],[side*next,y+.09,next],.018,hex);
+            }
+          }
+          brick(g,0,.53,0,.34,.11,.31,vermilion,true);
+          brick(g,0,.55,0,.35,.032,.32,0x385e6c);
+          brick(g,0,.90,0,.18,.065,.18,ivory,true);
+          for(let i=0;i<7;i++)brick(g,0,.96+i*.055,0,.065-i*.006,.056,.065-i*.006,i%2?ivory:vermilion);
+          brick(g,0,1.36,0,.015,.095,.015,vermilion);
+        } else if(type==='statue') {
+          const copper=0x429f8b,light=0x75b99d,shadow=0x328874;
+          for(const [y,w,h] of [[.11,.39,.07],[.17,.31,.05],[.27,.26,.17],[.38,.34,.045]])brick(g,0,y,0,w,h,w,0xd6c39e,true);
+          for(let i=0;i<7;i++) {
+            const w=.25-i*.018;
+            brick(g,0,.43+i*.059,0,w,.06,.19-i*.008,i%2?copper:light);
+            for(const side of [-1,1])brick(g,side*w*.30,.43+i*.059,.1-i*.004,.026,.06,.021,shadow);
+          }
+          brick(g,0,.87,0,.19,.17,.15,copper,true);
+          // Bent left arm holding the tablet; right arm raised toward the torch.
+          beam([.10,.91,0],[.17,.78,.07],.068,copper);
+          beam([.17,.78,.07],[.12,.87,.12],.060,light);
+          const tablet=brick(g,.13,.88,.14,.13,.21,.035,0x3a8f80);tablet.rotation.z=-.18;
+          beam([-.09,.93,0],[-.19,1.10,0],.07,copper);
+          beam([-.19,1.10,0],[-.22,1.25,0],.055,light);
+          brick(g,-.22,1.27,0,.052,.095,.05,copper);
+          brick(g,-.22,1.34,0,.105,.045,.10,0xa88745,true);
+          brick(g,-.22,1.405,0,.068,.095,.065,0xf4b744);
+          brick(g,-.22,1.465,0,.031,.055,.028,0xffdb7b);
+          brick(g,0,.981,0,.069,.055,.06,light);
+          brick(g,0,1.057,.007,.128,.135,.11,light);
+          brick(g,0,1.055,.072,.026,.032,.022,copper);
+          for(const x of [-.035,.035])brick(g,x,1.077,.065,.018,.012,.006,shadow);
+          brick(g,0,1.12,0,.157,.04,.137,copper,true);
+          for(let i=0;i<7;i++) {
+            const angle=(i/6-.5)*Math.PI;
+            beam([Math.sin(angle)*.065,1.12+Math.cos(angle)*.035,0],[Math.sin(angle)*.17,1.12+Math.cos(angle)*.18,0],.018,light);
+          }
+        } else if(type==='shanghai') {
+          // Three voxel spheres, centered on one continuous shaft; no adjacent skyscraper.
+          for(let i=0;i<3;i++) {
+            const angle=i*Math.PI*2/3;
+            brick(g,Math.cos(angle)*.115,.265,Math.sin(angle)*.115,.052,.37,.052,0xf0d7b9);
+          }
+          brick(g,0,.78,0,.071,1.15,.071,0xe9c8b0);
+          function pearl(y,r) {
+            const unit=r/2.7;
+            // A filled cubic lattice samples a sphere in all three axes, instead of square plates.
+            for(let x=-3;x<=3;x++)for(let z=-3;z<=3;z++)for(let layer=-3;layer<=3;layer++) {
+              if(Math.hypot(x*unit,z*unit,layer*unit)>r)continue;
+              const top=Math.hypot(x*unit,z*unit,(layer+1)*unit)>r;
+              const hex=layer===0?0xb95068:layer>0?0xe5818b:0xd36b7d;
+              const part=brick(g,x*unit,y+layer*unit,z*unit,unit*.99,unit*.99,unit*.99,hex,false);
+              if(top) {
+                const stud=new THREE.Mesh(studGeometry,material(hex));
+                stud.scale.setScalar(unit/.15*.68);stud.position.y=unit*.5+.007;part.add(stud);
+              }
+            }
+          }
+          pearl(.44,.205);pearl(.91,.145);pearl(1.20,.09);
+          brick(g,0,1.37,0,.022,.23,.022,0xbc5067);
+        } else if(type==='singapore') {
+          // Marina Bay Sands: three glazed towers carrying the boat-shaped SkyPark.
+          const ivory=0xf0ddbd,glass=0x679b9f,darkGlass=0x426f7c;
+          for(const x of [-.29,0,.29]) {
+            for(let floor=0;floor<12;floor++) {
+              const y=.12+floor*.064,z=(1-floor/11)*.045;
+              brick(g,x,y,z,.18,.064,.22,floor%3?ivory:0xd5c9ad);
+              for(const side of [-1,1]) {
+                brick(g,x,y,side*.114+z,.135,.045,.012,floor%2?glass:darkGlass);
+                for(const dx of [-.048,0,.048])brick(g,x+dx,y,side*.122+z,.008,.05,.008,ivory);
+              }
+              brick(g,x-.095,y,z,.012,.049,.16,glass);
+            }
+          }
+          for(let i=-6;i<=6;i++) {
+            const taper=Math.abs(i)>4?1-(Math.abs(i)-4)*.22:1;
+            brick(g,i*.075,.91+(Math.abs(i)>4?.012:0),0,.076,.07,.29*taper,ivory);
+            brick(g,i*.075,.955,0,.075,.021,.24*taper,0x8caf6c);
+          }
+          brick(g,-.07,.975,.048,.58,.014,.078,0x58c8d0);
+          for(const z of [-.145,.145])brick(g,0,.98,z,.83,.029,.015,0xb4d3c7);
+          for(const x of [-.32,.23,.36]) {
+            brick(g,x,.988,-.075,.065,.021,.060,0xead7b5);
+            brick(g,x,1.02,-.075,.035,.048,.035,0x50875a,true);
+          }
+          // A small lotus-like waterfront pavilion, assembled in stepped petals.
+          brick(g,.35,.15,.25,.10,.14,.10,ivory);
+          for(let i=0;i<5;i++) {
+            const a=i*Math.PI*2/5;
+            const petal=brick(g,.35+Math.cos(a)*.07,.25,.25+Math.sin(a)*.07,.065,.16,.055,0xfff0d9);
+            petal.rotation.set(Math.sin(a)*.35,0,-Math.cos(a)*.35);
+          }
+        } else if(type==='maldives') {
+          // A low tropical tableau: overwater villas, individual pier planks and palms.
+          const timber=0x956d4c,deck=0xd9b07a,thatch=0xc98950;
+          for(let i=0;i<11;i++)brick(g,-.39+i*.078,.17,.08,.075,.035,.065,deck);
+          for(const x of [-.28,.04,.30]) {
+            for(const dx of [-.072,.072])for(const z of [-.19,-.035])brick(g,x+dx,.145,z,.025,.13,.025,timber);
+            brick(g,x,.215,-.11,.20,.032,.22,deck,true);
+            brick(g,x,.315,-.13,.17,.17,.17,0xf2dfb4);
+            brick(g,x,.316,-.039,.075,.105,.009,0x508f99);
+            for(let layer=0;layer<4;layer++)brick(g,x,.414+layer*.03,-.13,.23-layer*.045,.031,.23-layer*.045,layer%2?thatch:0xd4a060,true);
+            for(let i=0;i<3;i++)brick(g,x,.20,.01+i*.027,.065,.025,.025,deck);
+          }
+          for(const x of [-.30,.28]) {
+            const palm=new THREE.Group();palm.position.set(x,.08,.27);
+            for(let i=0;i<6;i++)brick(palm,i*.007,.033+i*.06,0,.045,.066,.045,i%2?timber:deck);
+            for(let branch=0;branch<5;branch++) {
+              const a=branch*Math.PI*2/5;
+              for(let i=0;i<3;i++) {
+                const leaf=brick(palm,.035+Math.cos(a)*(.055+i*.05),.39-i*i*.012,Math.sin(a)*(.055+i*.05),.080,.025,.045,i%2?0x72ad58:0x398759);
+                leaf.rotation.y=-a;
+              }
+            }
+            for(const dx of [0,.035])brick(palm,.025+dx,.335,.03,.033,.035,.033,timber);
+            palm.userData.surrounding=true;g.add(palm);
+          }
+        } else if(type==='jeju') {
+          // Dol hareubang: volcanic-stone hat, heavy brows, broad nose and hands on the belly.
+          const basalt=0x717b73,edge=0x92998a,dark=0x424e49;
+          brick(g,-.08,.14,0,.26,.12,.22,basalt,true);
+          for(let i=0;i<4;i++)brick(g,-.08,.24+i*.08,0,.22-i*.012,.08,.20,i%2?edge:basalt);
+          brick(g,-.08,.65,0,.23,.26,.20,edge);
+          brick(g,-.08,.84,0,.31,.09,.28,basalt,true);
+          brick(g,-.08,.91,0,.23,.065,.21,basalt,true);
+          brick(g,-.08,.958,0,.15,.035,.14,edge,true);
+          for(const x of [-.15,-.01]) {
+            brick(g,x,.698,.112,.09,.036,.032,basalt);
+            brick(g,x,.655,.116,.030,.025,.011,dark);
+          }
+          brick(g,-.08,.61,.135,.05,.10,.07,basalt);
+          brick(g,-.08,.553,.113,.077,.018,.02,dark);
+          for(const side of [-1,1]) {
+            beam([-.08+side*.115,.47,.02],[-.08+side*.11,.34,.11],.045,basalt);
+            brick(g,-.08+side*.06,.33,.13,.085,.042,.040,edge);
+          }
+          // A compact stepped volcanic cone beside the stone guardian.
+          for(let i=0;i<4;i++)brick(g,.20,.12+i*.055,-.08,.24-i*.04,.06,.22-i*.035,i===3?basalt:0x779752,true);
+          brick(g,.2,.325,-.08,.065,.025,.065,dark);
+        } else if(type==='barcelona') {
+          // Sagrada Família: clustered slender spires and a deeply articulated basilica facade.
+          const stone=0xd7b37a,light=0xeed19c,shade=0x926c4d;
+          brick(g,0,.15,0,.54,.14,.35,stone,true);
+          brick(g,0,.36,-.05,.30,.31,.21,light);
+          for(const x of [-.22,-.075,.075,.22]) {
+            brick(g,x,.34,.14,.045,.30,.055,stone,true);
+            if(Math.abs(x)<.1)brick(g,x,.245,.158,.06,.14,.02,shade);
+          }
+          const spires=[[-.22,.105,.88],[-.075,.105,1.04],[.075,.105,1.04],[.22,.105,.88],[-.13,-.11,1.16],[.13,-.11,1.16],[0,-.10,1.38]];
+          for(const [x,z,height] of spires) {
+            const n=Math.round((height-.4)/.072);
+            for(let i=0;i<n;i++) {
+              const width=.073*(1-i/(n*1.65));
+              brick(g,x,.42+i*.072,z,width,.072,width,i%3===0?light:stone);
+              if(i%2===0)brick(g,x,.43+i*.072,z+width*.52,width*.35,.031,.008,shade);
+            }
+            brick(g,x,height+.018,z,.065,.055,.065,x===0?0xe7ba47:0xcf8a55,true);
+            brick(g,x,height+.09,z,.022,.10,.022,light);
+            brick(g,x,height+.106,z,.066,.019,.018,light);
+          }
+          for(let i=0;i<4;i++)brick(g,0,.55+i*.055,.08,.28-i*.06,.055,.09,stone,true);
+          brick(g,0,.52,.144,.07,.07,.015,0x6b9390,true);
+        } else if(type==='iceland') {
+          // Hallgrímskirkja's rising basalt-column silhouette, with snowy ground and a tiny house.
+          const concrete=0xc1c6bd,light=0xe5e7d8,dark=0x657f81;
+          for(let i=-4;i<=4;i++) {
+            const h=.43+(4-Math.abs(i))*.11;
+            brick(g,i*.061,.08+h/2,0,.057,h,.15,i%2?concrete:light,true);
+            brick(g,i*.061,.105+h,0,.037,.075,.10,light);
+          }
+          brick(g,0,.97,0,.135,.41,.16,light,true);
+          for(const x of [-.04,0,.04])brick(g,x,1.015,.085,.018,.14,.012,dark);
+          brick(g,0,1.205,0,.09,.08,.11,concrete,true);
+          brick(g,0,1.28,0,.027,.11,.026,dark);
+          brick(g,0,1.30,0,.085,.025,.022,dark);
+          brick(g,0,.20,.092,.07,.19,.025,dark);
+          brick(g,.21,.16,.19,.14,.16,.15,0xe7cfa7,true);
+          brick(g,.21,.265,.19,.18,.05,.18,0xc86a52,true);
+          for(const [x,z] of [[-.24,.21],[-.17,.16],[.19,-.14]])brick(g,x,.09,z,.11,.035,.10,0xf5f0dc,true);
+        } else if(type==='britain') {
+          // One UK entry carries London and Edinburgh: clock tower plus a small castellated keep.
+          const stone=0xd2b37f,light=0xf0d7a2,dark=0x426567;
+          brick(g,-.13,.13,0,.25,.10,.24,stone,true);
+          for(let i=0;i<8;i++) {
+            brick(g,-.13,.215+i*.073,0,.17,.073,.16,i%3===0?light:stone);
+            for(const x of [-.175,-.085])brick(g,x,.23+i*.073,.085,.018,.04,.009,dark);
+          }
+          brick(g,-.13,.865,0,.235,.22,.23,light,true);
+          // Four clock faces are actual 3D discs and hands, so every viewing angle reads correctly.
+          for(let face=0;face<4;face++) {
+            const clock=new THREE.Group();clock.position.set(-.13,.88,0);clock.rotation.y=face*Math.PI/2;
+            const dial=new THREE.Mesh(new THREE.CylinderGeometry(.074,.074,.01,24),material(0xfff3ce));
+            dial.rotation.x=Math.PI/2;dial.position.z=.119;clock.add(dial);
+            for(let hour=0;hour<12;hour++) {
+              const a=hour*Math.PI/6;
+              const tick=brick(clock,Math.sin(a)*.058,Math.cos(a)*.058,.128,.008,.014,.006,dark);
+              tick.rotation.z=-a;
+            }
+            const hand=brick(clock,.008,.016,.134,.011,.051,.006,dark);hand.rotation.z=-.48;
+            brick(clock,-.018,0,.136,.043,.009,.006,dark);
+            g.add(clock);
+          }
+          for(let i=0;i<5;i++)brick(g,-.13,1.01+i*.06,0,.23-i*.04,.06,.22-i*.038,dark,true);
+          brick(g,-.13,1.355,0,.019,.14,.019,0xc59d54);
+          // Edinburgh Castle's stone terraces, defensive walls, battlements and flag.
+          for(let i=0;i<3;i++)brick(g,.20,.10+i*.052,.02,.25-i*.025,.053,.30-i*.02,i%2?0x939586:0xa5a491,true);
+          brick(g,.20,.34,.02,.20,.27,.23,0xbab49b);
+          brick(g,.20,.49,.02,.23,.065,.26,0x969b8a,true);
+          for(const x of [.12,.20,.28])for(const z of [-.09,.13])brick(g,x,.55,z,.039,.065,.041,0xbeb8a0,true);
+          for(const x of [.15,.24])brick(g,x,.35,.14,.032,.08,.012,0x576763);
+          brick(g,.20,.645,0,.012,.20,.012,dark);
+          brick(g,.24,.71,0,.085,.06,.015,0x5d8ba2);
+        } else {
+          // A masonry pyramid with alternating courses, an entrance and a smaller companion.
+          for(let i=0;i<9;i++) {
+            const n=9-i,unit=.075;
+            for(let x=0;x<n;x++)for(let z=0;z<n;z++) {
+              if(x>0&&z>0&&x<n-1&&z<n-1)continue;
+              brick(g,(x-(n-1)/2)*unit,.111+i*.059,(z-(n-1)/2)*unit,unit*.99,.06,unit*.99,(x+z+i)%3?0xe6b95d:0xf3cf81,i===8);
+            }
+          }
+          brick(g,0,.16,.34,.064,.12,.025,0x846146);
+          for(let i=0;i<4;i++)brick(g,.25,.12+i*.055,-.24,.20-i*.043,.056,.20-i*.043,0xd7a348,true);
+        }
+        // Enlarge only the architecture, leaving its ground contact and shared brick terrain fixed.
+        const landmarkScale=type==='jeju'?.82:1.25;
+        const footprintScale=type==='jeju'?1.05:landmarkScale;
+        for(const piece of g.children) {
+          piece.position.x*=footprintScale;piece.position.z*=footprintScale;
+          piece.position.y=.08+(piece.position.y-.08)*landmarkScale;
+          piece.scale.multiply(new THREE.Vector3(footprintScale,landmarkScale,footprintScale));
+        }
+        // Real planted trees and small street buildings are part of each visited-place tableau.
+        // Their original positions are restored exactly after hovering.
+        const surroundings=g.children.filter(child=>child.userData.surrounding);
+        for(const side of type==='maldives'?[]:[-1,1]) {
+          tree(g,side*width*.40,-depth*.33,side<0?.40:.33);
+          const planted=g.children.at(-1);planted.position.y=.08;
+          planted.userData.surrounding=true;surroundings.push(planted);
+          if(place.visited) {
+            const street=new THREE.Group();street.position.set(side*width*.40,.08,depth*.34);
+            const wall=side<0?0xe7c285:0xe8ad94;
+            const h=side<0?.15:.105;
+            brick(street,0,h/2,0,.10,h,.10,wall);
+            brick(street,0,h*.58,.052,.045,.026,.008,0x426b76);
+            brick(street,0,h+.019,0,.115,.038,.115,side<0?0x5e9191:0xcd7959,true);
+            street.userData.surrounding=true;g.add(street);surroundings.push(street);
+          }
+        }
+        // Seat the architecture directly on the existing terrain, without a display plate.
+        // Only ground-contact footprints adjust terrain; the spaces between retain their studs.
+        for(const child of g.children)child.position.y-=.14;
+        g.updateMatrixWorld(true);
+        const contacts=[];
+        g.traverse(mesh=>{
+          if(!mesh.isMesh)return;
+          const footprint=new THREE.Box3().setFromObject(mesh);
+          if(footprint.min.y<=-.01)contacts.push(footprint);
+        });
+        // A fixed hit volume keeps hover stable while the tableau and loose pieces float.
+        const bounds=new THREE.Box3().setFromObject(g);
+        const hitbox=new THREE.Mesh(new THREE.BoxGeometry(...bounds.getSize(new THREE.Vector3()).addScalar(.13).toArray()),hitMaterial);
+        hitbox.position.copy(bounds.getCenter(new THREE.Vector3()));
+        const hitRoot=new THREE.Group();hitRoot.add(hitbox);
+        orient(hitRoot,lat,lon,ANCHOR);world.add(hitRoot);
+        hitbox.userData.landmark=g;
+        if(place.visited)landmarkHitboxes.push(hitbox);
+        const candidates=g.children.filter(piece=>piece.userData.isBrick && piece.position.y>.3);
+        const pieces=[];
+        const pieceCount=place.visited?Math.min(4,candidates.length):0;
+        for(let i=0;i<pieceCount;i++) {
+          const piece=candidates[Math.floor((i+.5)*candidates.length/pieceCount)];
+          const angle=i*2.399+lon*.03;
+          pieces.push({piece,home:piece.position.clone(),rotation:piece.quaternion.clone(),
+            offset:new THREE.Vector3(Math.cos(angle)*(.23+i*.026),.30+(i%3)*.13,Math.sin(angle)*(.23+i*.025)),
+            spin:new THREE.Quaternion().setFromEuler(new THREE.Euler((i%2?1:-1)*.35,.3+i*.09,(i%3-1)*.3))});
+        }
+        if(place.visited)for(const [i,piece] of surroundings.entries()) {
+          const side=Math.sign(piece.position.x)||1;
+          pieces.push({piece,home:piece.position.clone(),rotation:piece.quaternion.clone(),
+            offset:new THREE.Vector3(side*(.16+(i%2)*.09),.42+(i%3)*.15,Math.sign(piece.position.z)*(.16+(i%2)*.06)),
+            spin:new THREE.Quaternion().setFromEuler(new THREE.Euler((i%2-.5)*.3,side*.32,side*.18))});
+        }
+        for(const item of pieces) {
+          item.targetOffset=item.offset.clone();item.currentOffset=item.offset.clone();
+          item.currentSpin=item.spin.clone();
+        }
+        // Keep animated pieces separate and batch the remaining geometry.
+        const moving=new Set(pieces.map(item=>item.piece)),staticParts=new Map();
+        g.updateMatrixWorld(true);
+        for(const child of [...g.children]) {
+          if(moving.has(child))continue;
+          child.traverse(mesh=>{
+            if(!mesh.isMesh)return;
+            if(!staticParts.has(mesh.geometry))staticParts.set(mesh.geometry,[]);
+            staticParts.get(mesh.geometry).push({matrix:mesh.matrixWorld.clone(),color:mesh.material.color.clone()});
+          });
+          g.remove(child);
+        }
+        for(const [geometry,items] of staticParts) {
+          const batch=new THREE.InstancedMesh(geometry,material(0xffffff),items.length);
+          items.forEach((item,i)=>{batch.setMatrixAt(i,item.matrix);batch.setColorAt(i,item.color);});
+          batch.castShadow=batch.receiveShadow=true;g.add(batch);
+        }
+        orient(g,lat,lon,ANCHOR);
+        fitFoundation(g,width/2,depth/2,-.06,contacts,type==='maldives'?0xf0d39a:null);
+        g.userData={id:place.id,name,visited:place.visited,cities:place.cities,coordinates:{lat:place.lat,lon:place.lon},pieces,scatter:0,
+          home:g.position.clone(),normal:g.position.clone().normalize(),restRotation:g.quaternion.clone(),
+          floatHeight:.105,targetHeight:.105,tilt:new THREE.Quaternion(),targetTilt:new THREE.Quaternion(),phase:Math.random()*Math.PI*2,
+          focusLocal:bounds.getCenter(new THREE.Vector3()),modelSize:bounds.getSize(new THREE.Vector3())};
+        world.add(g); landmarks.push(g);
+      }
+      destinations.forEach(landmark);
+
+      // Dense scenery is generated deterministically, then batched like the globe surface.
+      const scenery=new THREE.Group();
+      let scenerySeed=82147;
+      function random() {
+        scenerySeed=(Math.imul(scenerySeed,1664525)+1013904223)>>>0;
+        return scenerySeed/4294967296;
+      }
+      function angularDistance(lat,lon,otherLat,otherLon) {
+        const dl=((lon-otherLon+540)%360)-180;
+        return Math.hypot(lat-otherLat,dl*Math.cos(radians((lat+otherLat)/2)));
+      }
+      function nearLandmark(lat,lon) {
+        return landmarkLocations.some(([a,b])=>angularDistance(lat,lon,a,b)<9);
+      }
+      const ridges=[
+        [[58,-128],[49,-119],[41,-112],[35,-106]],
+        [[2,-76],[-10,-75],[-22,-69],[-35,-70],[-46,-73]],
+        [[46,6],[46,12],[45,18]],
+        [[34,72],[32,80],[29,88],[30,96],[35,102]],
+        [[44,77],[47,88],[49,97]],
+        [[7,38],[-2,36],[-12,34]],
+        [[-24,148],[-31,149],[-36,146]],
+      ];
+      const peaks=[];
+      for(const ridge of ridges) {
+        for(let i=0;i<ridge.length;i++) {
+          const [lat,lon]=ridge[i];
+          for(let j=0;j<2;j++) {
+            const a=lat+(random()-.5)*3,b=lon+(random()-.5)*3;
+            if(nearLandmark(a,b))continue;
+            const g=new THREE.Group();
+            const layers=5+Math.floor(random()*4),unit=.135;
+            for(let level=0;level<layers;level++) {
+              const n=Math.max(1,Math.ceil((layers-level)*.6));
+              for(let x=0;x<n;x++)for(let z=0;z<n;z++) {
+                const snow=level>=layers-2;
+                const colors=snow?[0xf4f1dc,0xe2e7d7]:level<2?[0x819b5a,0x749553]:[0x969e88,0xb2b29b,0x8c9d8e];
+                brick(g,(x-(n-1)/2)*unit,level*.098,(z-(n-1)/2)*unit,unit*.97,.098,unit*.97,colors[Math.floor(random()*colors.length)],true);
+              }
+            }
+            orient(g,a,b,ANCHOR);
+            fitFoundation(g,Math.ceil(layers*.6)*unit/2,Math.ceil(layers*.6)*unit/2,-.049);
+            scenery.add(g);peaks.push([a,b]);
+          }
+        }
+      }
+      const walls=[0xf3d8a0,0xeab07e,0xf1e5bf,0x81b7b0,0xe6a492,0xc4cc99];
+      const roofs=[0xc66d50,0xde9162,0x426f78,0xe6b553];
+      // Scenery uses the exact center, face normal and grid axes of a real terrain brick.
+      // One building occupies one cell: no shared tangent plate or arbitrary yaw.
+      const occupiedCells=new Set();
+      const sceneryCells=cells.filter(cell=>cell.land&&!cell.ice&&!cell.river&&Math.abs(cell.lat)<=63&&
+        !nearLandmark(cell.lat,cell.lon)&&!rivers.some(path=>pathDistance(cell.lat,cell.lon,path)<2.7)&&
+        !peaks.some(([a,b])=>angularDistance(cell.lat,cell.lon,a,b)<5));
+      const siteDirection=new THREE.Vector3();
+      function findSceneryCell(lat,lon) {
+        siteDirection.setFromSphericalCoords(1,radians(90-lat),radians(lon));
+        let nearest=null,best=Math.cos(radians(2));
+        for(const cell of sceneryCells) {
+          if(occupiedCells.has(cell))continue;
+          const alignment=cell.normal.dot(siteDirection);
+          if(alignment>best){nearest=cell;best=alignment;}
+        }
+        return nearest;
+      }
+      function seatOnCell(group,cell) {
+        orient(group,cell.lat,cell.lon,R+cell.height-.001);
+        // The concealed stud is inside the assembled part, not beneath a hovering platform.
+        const index=cells.indexOf(cell);
+        orient(dummy,cell.lat,cell.lon,R+cell.height+.016);
+        dummy.scale.setScalar(0);dummy.updateMatrix();studs.setMatrixAt(index,dummy.matrix);
+        occupiedCells.add(cell);scenery.add(group);
+      }
+      function plantOnCell(lat,lon,size) {
+        const cell=findSceneryCell(lat,lon);
+        if(!cell)return;
+        const grove=new THREE.Group();tree(grove,0,0,size);seatOnCell(grove,cell);
+      }
+      let townCount=0,buildingCount=0;
+      for(const cell of sceneryCells) {
+        if(occupiedCells.has(cell)||random()>.021)continue;
+        const count=2+Math.floor(random()*3);
+        let placed=0;
+        for(let i=0;i<count;i++) {
+          const site=findSceneryCell(cell.lat+Math.floor(i/2)*360/ROWS,
+            cell.lon+(i%2)*720/(COLUMNS*Math.cos(radians(cell.lat))));
+          if(!site)continue;
+          const building=new THREE.Group();
+          const floors=2+Math.floor(random()*6),w=site.width*.91,d=Math.PI*R/ROWS*.91;
+          const wall=walls[Math.floor(random()*walls.length)],roof=roofs[Math.floor(random()*roofs.length)];
+          const h=floors*.073;
+          for(let floor=0;floor<floors;floor++) {
+            brick(building,0,.0365+floor*.073,0,w,.073,d,wall);
+            if(floor>0) {
+              brick(building,0,.048+floor*.073,d/2+.004,w*.58,.023,.009,0x466e79);
+              brick(building,w/2+.004,.048+floor*.073,0,.009,.023,.064,0x466e79);
+            }
+          }
+          brick(building,0,h+.0275,0,w+.022,.055,d+.022,roof,true);
+          if(floors<4)brick(building,0,h+.0775,0,w*.7,.045,d*.65,roof,true);
+          else if(random()>.5)brick(building,0,h+.10,0,.035,.11,.035,0xe1d4b4);
+          seatOnCell(building,site);buildingCount++;placed++;
+        }
+        if(placed) {
+          plantOnCell(cell.lat,cell.lon-720/(COLUMNS*Math.cos(radians(cell.lat))),.45+random()*.23);
+          townCount++;
+        }
+      }
+      [[55,-116],[44,-102],[-10,-63],[-23,-52],[57,28],[61,73],[49,108],[27,104],[-25,144],[-8,25]]
+        .forEach(([lat,lon])=>plantOnCell(lat,lon,.7));
+      // Small tree clusters between settlements keep the landscape varied without filling every tile.
+      for(let i=0;i<90;i++) {
+        const cell=sceneryCells[Math.floor(random()*sceneryCells.length)];
+        if(!cell)continue;
+        plantOnCell(cell.lat,cell.lon,.48+random()*.4);
+        plantOnCell(cell.lat+180/ROWS,cell.lon+360/(COLUMNS*Math.cos(radians(cell.lat))),.38);
+      }
+      scenery.updateMatrixWorld(true);
+      const batches=new Map();
+      scenery.traverse(object=>{
+        if(!object.isMesh)return;
+        if(!batches.has(object.geometry))batches.set(object.geometry,[]);
+        batches.get(object.geometry).push({matrix:object.matrixWorld.clone(),color:object.material.color.clone()});
+      });
+      for(const [geometry,items] of batches) {
+        const instances=new THREE.InstancedMesh(geometry,surfaceMaterial,items.length);
+        items.forEach((item,i)=>{instances.setMatrixAt(i,item.matrix);instances.setColorAt(i,item.color);});
+        instances.castShadow=instances.receiveShadow=true;world.add(instances);
+      }
+      canvas.dataset.scenery=JSON.stringify({towns:townCount,buildings:buildingCount,mountainPeaks:peaks.length,rivers:rivers.length});
+      blocks.instanceMatrix.needsUpdate=studs.instanceMatrix.needsUpdate=true;
+      blocks.instanceColor.needsUpdate=studs.instanceColor.needsUpdate=true;
+      blocks.computeBoundingSphere();studs.computeBoundingSphere();
+      canvas.dataset.foundationCells=String(foundationCells);
+
+      let selectedLandmark=null,focusTween=null,savedOverview=null,overviewHeight=0;
+      const focusPoint=new THREE.Vector3();
+      // Overview keeps the globe's center at the bottom edge; detail framing reserves space for UI.
+      function resize() {
+        const width=innerWidth,height=innerHeight,aspect=width/height;
+        // Phones use a closer, intentionally cropped view; desktop keeps its wide framing.
+        // Retain a height limit so landscape screens still have space above the landmarks.
+        const frameHalfWidth=ANCHOR+.6;
+        const frameTop=ANCHOR+2.05;
+        const headerClearance=document.querySelector('header').getBoundingClientRect().bottom+16;
+        const availableHeight=Math.max(1,height-headerClearance);
+        const touchScreen=matchMedia('(pointer: coarse)').matches;
+        const phone=width<=700 || (touchScreen && Math.min(width,height)<=700);
+        const tablet=touchScreen && Math.min(width,height)<=1024;
+        const phonePortrait=phone && height>width;
+        const framingZoom=phonePortrait?2.15:phone?1.65:tablet?1.25:1.04;
+        const pixelsPerUnit=Math.min(width/(frameHalfWidth*2)*framingZoom,availableHeight/frameTop*1.04);
+        const viewHeight=height/pixelsPerUnit;
+        overviewHeight=viewHeight;
+        if(!selectedLandmark && !focusTween) {
+          camera.left=-viewHeight*aspect/2; camera.right=viewHeight*aspect/2;
+          camera.top=viewHeight; camera.bottom=0;
+          camera.updateProjectionMatrix();
+        }
+        renderer.setSize(width,height);
+      }
+      resize(); addEventListener('resize',resize);
+      const ray=new THREE.Raycaster(), pointer=new THREE.Vector2(10,10);
+      const tooltip=document.querySelector('#tooltip');
+      const solidSphere=new THREE.Sphere(new THREE.Vector3(),R+.06);
+      const occlusionPoint=new THREE.Vector3();
+      let hover=null, dragging=false, pointerId=null, previousX=0,previousY=0,downX=0,downY=0,pressTravel=0,pressedLandmark=null;
+      const velocity=new THREE.Vector2(), turn=new THREE.Quaternion();
+      const axisX=new THREE.Vector3(1,0,0),axisY=new THREE.Vector3(0,1,0);
+      const travelUI=createTravelUI({destinations,onSelect:focusDestination,onClose:closeDestination});
+      function focusDestination(id) {
+        const g=landmarks.find(item=>item.userData.id===id&&item.userData.visited);
+        if(!g || (g===selectedLandmark&&!focusTween))return;
+        if(!savedOverview)savedOverview=world.quaternion.clone();
+        selectedLandmark=g;velocity.set(0,0);pointer.set(10,10);
+        const normal=new THREE.Vector3(0,.52,Math.sqrt(1-.52*.52));
+        const east=new THREE.Vector3(1,0,0),south=new THREE.Vector3().crossVectors(east,normal);
+        const rotation=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(east,normal,south))
+          .multiply(g.userData.restRotation.clone().invert());
+        focusTween={from:world.quaternion.clone(),to:rotation,start:performance.now(),opening:true,
+          duration:matchMedia('(prefers-reduced-motion:reduce)').matches?0:1000};
+        travelUI.prepare(destinations.find(place=>place.id===id));
+        canvas.dataset.selectedDestination=id;
+      }
+      function closeDestination() {
+        if(!savedOverview)return;
+        travelUI.close();selectedLandmark=null;velocity.set(0,0);pointer.set(10,10);
+        focusTween={from:world.quaternion.clone(),to:savedOverview.clone(),start:performance.now(),opening:false,
+          duration:matchMedia('(prefers-reduced-motion:reduce)').matches?0:900};
+        canvas.dataset.selectedDestination='';canvas.focus({preventScroll:true});
+      }
+      function updateFocus(time,dt) {
+        if(focusTween) {
+          const t=focusTween.duration?Math.min(1,(time-focusTween.start)/focusTween.duration):1;
+          const eased=t*t*(3-2*t);
+          world.quaternion.slerpQuaternions(focusTween.from,focusTween.to,eased);
+          if(t===1) {
+            const opening=focusTween.opening;focusTween=null;
+            if(opening)travelUI.show();else savedOverview=null;
+          }
+        }
+        const aspect=innerWidth/innerHeight;
+        let spanY=overviewHeight,left=-spanY*aspect/2,bottom=0;
+        if(selectedLandmark) {
+          const data=selectedLandmark.userData,area=travelUI.viewport();
+          const ppu=Math.min(innerHeight/overviewHeight*1.4,area.height*.78/Math.max(1.1,data.modelSize.y),area.width*.70/Math.max(.8,data.modelSize.x));
+          spanY=innerHeight/ppu;
+          const finalRotation=focusTween?.to||world.quaternion;
+          focusPoint.copy(data.focusLocal).applyQuaternion(data.restRotation).add(data.home).applyQuaternion(finalRotation);
+          left=focusPoint.x-(area.left+area.width/2)/innerWidth*spanY*aspect;
+          bottom=focusPoint.y-(1-(area.top+area.height/2)/innerHeight)*spanY;
+        }
+        const blend=matchMedia('(prefers-reduced-motion:reduce)').matches?1:1-Math.exp(-8*dt);
+        const target={left,right:left+spanY*aspect,top:bottom+spanY,bottom};
+        for(const key of ['left','right','top','bottom']) {
+          camera[key]+=(target[key]-camera[key])*blend;
+          if(Math.abs(target[key]-camera[key])<.0001)camera[key]=target[key];
+        }
+        camera.updateProjectionMatrix();
+      }
+      function pickLandmark() {
+        world.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+        ray.setFromCamera(pointer,camera);
+        const hit=ray.intersectObjects(landmarkHitboxes,false)[0];
+        const surfaceHit=ray.ray.intersectSphere(solidSphere,occlusionPoint);
+        return hit&&(!surfaceHit||hit.distance<ray.ray.origin.distanceTo(surfaceHit))?hit.object.userData.landmark:null;
+      }
+      function rotate(dx,dy) {
+        turn.setFromAxisAngle(axisY,dx);world.quaternion.premultiply(turn);
+        turn.setFromAxisAngle(axisX,dy);world.quaternion.premultiply(turn).normalize();
+      }
+      function locate(e) { pointer.set(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2); }
+      canvas.addEventListener('pointerdown',e=>{
+        if(e.button!==0 || dragging || focusTween || travelUI.isModalOpen())return;
+        dragging=true;pointerId=e.pointerId;previousX=e.clientX;previousY=e.clientY;
+        downX=e.clientX;downY=e.clientY;pressTravel=0;
+        velocity.set(0,0);locate(e);canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});
+        pressedLandmark=pickLandmark();
+      });
+      canvas.addEventListener('pointermove',e=>{
+        locate(e);
+        if(!dragging || e.pointerId!==pointerId)return;
+        pressTravel=Math.max(pressTravel,Math.hypot(e.clientX-downX,e.clientY-downY));
+        if(selectedLandmark)return;
+        if(pressTravel<=6)return;
+        const speed=3.5/Math.min(innerWidth,innerHeight);
+        velocity.set((e.clientX-previousX)*speed,(e.clientY-previousY)*speed);
+        rotate(velocity.x,velocity.y);
+        previousX=e.clientX;previousY=e.clientY;
+      });
+      function release(e) {
+        if(e.pointerId!==pointerId)return;
+        locate(e);
+        const clicked=e.type==='pointerup'&&pressTravel<=6&&Math.hypot(e.clientX-downX,e.clientY-downY)<=6;
+        const target=clicked?pickLandmark():null;
+        dragging=false;pointerId=null;
+        if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+        if(e.type==='pointercancel')velocity.set(0,0);
+        if(target&&target===pressedLandmark){velocity.set(0,0);focusDestination(target.userData.id);}
+        pressedLandmark=null;
+      }
+      canvas.addEventListener('pointerup',release);
+      canvas.addEventListener('pointercancel',release);
+      canvas.addEventListener('lostpointercapture',()=>{dragging=false;pointerId=null;});
+      canvas.addEventListener('pointerleave',()=>{pointer.set(10,10);});
+      canvas.addEventListener('keydown',e=>{
+        if(selectedLandmark||focusTween)return;
+        const directions={ArrowLeft:[-.10,0],ArrowRight:[.10,0],ArrowUp:[0,-.10],ArrowDown:[0,.10]};
+        if(directions[e.key]){e.preventDefault();velocity.set(0,0);rotate(...directions[e.key]);}
+      });
+      function checkHover() {
+        let next=null;
+        if(!dragging&&!focusTween&&!selectedLandmark&&!travelUI.isModalOpen()) {
+          next=pickLandmark();
+        }
+        if(next && next!==hover) {
+          const data=next.userData;
+          data.targetHeight=.09+Math.random()*.14;
+          const direction=Math.random()*Math.PI*2,angle=radians(3+Math.random()*4);
+          data.targetTilt.setFromEuler(new THREE.Euler(Math.cos(direction)*angle,(Math.random()-.5)*.08,Math.sin(direction)*angle));
+          for(const item of data.pieces) {
+            item.targetOffset.copy(item.offset).multiplyScalar(.75+Math.random()*.55);
+            item.targetOffset.y=.22+Math.random()*.54;
+            item.spin.setFromEuler(new THREE.Euler((Math.random()-.5)*.65,(Math.random()-.5)*.85,(Math.random()-.5)*.65));
+          }
+        }
+        hover=next;
+        canvas.style.cursor=focusTween||selectedLandmark?'default':dragging?'grabbing':hover?.userData.visited?'pointer':'grab';
+        tooltip.style.display=hover?'block':'none';
+        if(hover) {
+          tooltip.textContent=hover.userData.name;
+          tooltip.style.left=Math.min(innerWidth-95,Math.max(95,(pointer.x+1)*innerWidth/2))+'px';
+          tooltip.style.top=Math.max(75,(1-pointer.y)*innerHeight/2)+'px';
+        }
+        canvas.dataset.hoveredLandmark=hover?.userData.name || '';
+      }
+      let lastTime=0;
+      const scatterRotation=new THREE.Quaternion();
+      function animate(time) {
+        const dt=Math.min((time-lastTime)/1000,.04);lastTime=time;
+        updateFocus(time,dt);
+        if(!dragging && !selectedLandmark && !focusTween && velocity.lengthSq()>.00000001) {
+          rotate(velocity.x*dt*60,velocity.y*dt*60);
+          velocity.multiplyScalar(Math.exp(-7*dt));
+        }
+        world.updateMatrixWorld(true);checkHover();
+        for(const g of landmarks) {
+          const data=g.userData;
+          const target=g===hover && data.visited?1:0;
+          data.scatter+=(target-data.scatter)*(1-Math.exp(-9*dt));
+          if(!target && data.scatter<.001)data.scatter=0;
+          const blend=1-Math.exp(-7*dt);
+          data.floatHeight+=(data.targetHeight-data.floatHeight)*blend;
+          data.tilt.slerp(data.targetTilt,blend);
+          g.position.copy(data.home).addScaledVector(data.normal,(data.floatHeight+Math.sin(time*.0015+data.phase)*.012)*data.scatter);
+          g.quaternion.copy(data.restRotation).multiply(scatterRotation.identity().slerp(data.tilt,data.scatter));
+          for(const [i,item] of data.pieces.entries()) {
+            item.currentOffset.lerp(item.targetOffset,blend);item.currentSpin.slerp(item.spin,blend);
+            item.piece.position.copy(item.home).addScaledVector(item.currentOffset,data.scatter);
+            item.piece.position.y+=Math.sin(time*.0018+i)*.025*data.scatter;
+            item.piece.quaternion.copy(item.rotation).multiply(scatterRotation.identity().slerp(item.currentSpin,data.scatter));
+          }
+        }
+        renderer.render(scene,camera);
+        requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+    </script>
+  </body>
+</html>

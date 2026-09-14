@@ -1,0 +1,11 @@
+{
+  "paris": { "cities": { "巴黎": [] } },
+  "tokyo": { "cities": { "东京": [] } },
+  "shanghai": { "cities": { "上海": [] } },
+  "jeju": { "cities": { "济州岛": [] } },
+  "barcelona": { "cities": { "巴塞罗那": [] } },
+  "iceland": { "cities": { "冰岛": [] } },
+  "united-kingdom": { "cities": { "伦敦": [], "爱丁堡": [] } },
+  "singapore": { "cities": { "新加坡": [] } },
+  "maldives": { "cities": { "马尔代夫": [] } }
+}
