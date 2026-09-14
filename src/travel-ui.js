@@ -3,7 +3,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   const panel=document.createElement('aside');
   panel.className='album-panel';panel.hidden=true;panel.inert=true;
   panel.setAttribute('aria-labelledby','album-title');
-  panel.innerHTML=`<div class="album-top"><span>ALONG THE WAY · 沿途</span><button class="round-button" data-close aria-label="关闭相册，返回地球">×</button></div>
+  panel.innerHTML=`<div class="album-top"><span>A POCKET ATLAS</span><button class="round-button" data-close aria-label="关闭相册，返回地球">×</button></div>
     <h2 id="album-title" tabindex="-1"></h2><p class="album-coordinate"></p><div class="city-tabs" aria-label="选择城市"></div>
     <hr class="album-rule"><div class="album-meta"><span>旅行相册</span><span data-count></span></div>
     <div class="photo-grid"></div><div class="album-empty"></div>
