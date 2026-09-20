@@ -1,16 +1,17 @@
 // DOM UI stays independent of Three.js. Photo previews are local, never uploaded.
-import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=pocket-atlas';
+import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=travel-trails';
+import { canBrowsePlace } from './destination-policy.js';
 export function createTravelUI({ destinations, onSelect, onClose }) {
   const panel=document.createElement('aside');
   panel.className='album-panel';panel.hidden=true;panel.inert=true;
   panel.setAttribute('aria-labelledby','album-title');
-  panel.innerHTML=`<div class="album-top"><span>POCKET ATLAS</span><button class="round-button" data-close data-i18n-label="closeAlbum">×</button></div>
-    <h2 id="album-title" tabindex="-1"></h2><p class="album-coordinate"></p><div class="city-tabs" data-i18n-label="chooseCity"></div>
-    <hr class="album-rule"><div class="album-meta"><span data-i18n="album"></span><span data-count></span></div>
+  panel.innerHTML=`<div class="album-top"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z M9 3v16M15 5v16"/></svg>POCKET ATLAS</span><button class="round-button" data-close data-i18n-label="closeAlbum">×</button></div>
+    <div class="album-heading"><h2 id="album-title" tabindex="-1"></h2><p class="album-coordinate"></p><div class="city-tabs" data-i18n-label="chooseCity"></div></div>
+    <div class="album-body"><div class="album-meta"><span data-i18n="album"></span><span data-count></span></div>
     <div class="photo-grid"></div><div class="album-empty"></div>
     <div class="album-footer"><button class="preview-button" data-preview data-i18n="preview"></button>
     <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden>
-    <p class="album-notice" data-i18n="previewNotice"></p><p class="album-notice" role="status" data-status></p></div>`;
+    <p class="album-notice" data-i18n="previewNotice"></p><p class="album-notice" role="status" data-status></p></div></div>`;
   document.body.append(panel);
   const viewer=document.createElement('dialog');viewer.className='photo-viewer';
   viewer.dataset.i18nLabel='photoViewer';
@@ -72,6 +73,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     });
     if(!photos.length) {
       const frames=document.createElement('div');frames.className='empty-frames';frames.setAttribute('aria-hidden','true');
+      frames.innerHTML=`<svg viewBox="0 0 240 152" fill="none" focusable="false" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M24 123c-30-51 33-48 42-67s-2-31-20-28M170 120c59 26 76-6 53-34" stroke-dasharray="4 5"/><rect x="61" y="21" width="123" height="110" rx="8" fill="#b9d8c3"/><path d="M71 42h103M71 62h103M71 82h103M71 102h103M84 31v90M104 31v90M124 31v90M144 31v90M164 31v90" stroke-opacity=".16"/><rect x="42" y="48" width="124" height="79" rx="8" fill="#fcf6e9"/><path d="m80 48 7-12h32l7 12" fill="#f5cc62"/><path d="M43 70h122"/><circle cx="104" cy="88" r="25" fill="#f5cc62"/><circle cx="104" cy="88" r="17" fill="#fcf6e9"/><path d="M94 88a10 10 0 0 1 10-10"/><rect x="51" y="56" width="16" height="7" rx="2" fill="#b9d8c3"/><circle cx="147" cy="59" r="3" fill="#ef805c"/><path d="M211 40c0 13-17 27-17 27s-17-14-17-27a17 17 0 1 1 34 0Z" fill="#ef805c"/><circle cx="194" cy="40" r="5" fill="#fcf6e9"/><path d="M30 64v10m-5-5h10M204 110v10m-5-5h10"/></svg>`;
       const heading=document.createElement('h3'),copy=document.createElement('p');
       const hasLocal=localAlbums.has(key());
       heading.textContent=t(loadError&&!hasLocal?'albumError':manifest===null&&!hasLocal?'loading':'emptyTitle');
@@ -114,7 +116,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   const placesButton=document.querySelector('[data-places]');placesButton.setAttribute('aria-controls',menu.id);placesButton.setAttribute('aria-expanded','false');
   function hideMenu(){menu.hidden=true;placesButton.setAttribute('aria-expanded','false');}
   const menuLabels=[];
-  for(const destination of destinations.filter(place=>place.visited)) {
+  for(const destination of destinations.filter(canBrowsePlace)) {
     const button=document.createElement('button');
     const number=document.createElement('span');number.className='place-number';number.setAttribute('aria-hidden','true');number.textContent=String(menuLabels.length+1).padStart(2,'0');
     const label=document.createElement('span');label.textContent=placeName(destination.name);
@@ -150,7 +152,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   });
   loadAlbums();
   return {
-    prepare(place){if(viewer.open)viewer.close();active=place;city=place.cities[0];statusMessage=null;title.textContent=placeName(place.name);
+    prepare(place){if(!canBrowsePlace(place))return;if(viewer.open)viewer.close();active=place;city=place.cities[0];statusMessage=null;title.textContent=placeName(place.name);
       updateMenuSelection();
       panel.querySelector('.album-coordinate').textContent=`${Math.abs(place.lat).toFixed(2)}° ${place.lat<0?'S':'N'}  /  ${Math.abs(place.lon).toFixed(2)}° ${place.lon<0?'W':'E'}`;
       panel.hidden=false;panel.inert=true;panel.classList.remove('is-open');render();panel.scrollTop=0;},

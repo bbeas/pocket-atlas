@@ -2,9 +2,9 @@ export const messages = {
   en: {
     pageTitle: 'Pocket Atlas — A Personal Travel Journal',
     description: 'A personal travel journal, one little brick-built place at a time.',
-    travelIndex: 'Travel index', chooseDestination: 'Choose a place to revisit', mainMenu: 'Main menu', switchLanguage: 'Switch to Chinese',
+    travelIndex: 'Travel Trails', chooseDestination: 'Little stops along the way', mainMenu: 'Main menu', switchLanguage: 'Switch to Chinese',
     taglineTop: 'A PERSONAL', taglineBottom: 'TRAVEL JOURNAL',
-    canvas: 'Brick globe: drag or use the arrow keys to rotate. Select a visited place to browse photos, or open the pin icon for the travel index. Press Escape to return to the globe.',
+    canvas: 'Brick globe: drag or use the arrow keys to rotate. Select a place to browse photos, or open the pin icon for Travel Trails. Press Escape to return to the globe.',
     closeAlbum: 'Close album and return to the globe', chooseCity: 'Choose a city', album: 'Travel album',
     count: '{count} photos', countOne: '{count} photo', preview: 'Preview your photos',
     previewNotice: 'Local preview only. Nothing is uploaded or saved. Up to 10 photos.',
@@ -21,9 +21,9 @@ export const messages = {
   zh: {
     pageTitle: 'Pocket Atlas — 私人旅行手记',
     description: 'Pocket Atlas，一本在积木地球上慢慢展开的私人旅行手记。',
-    travelIndex: '旅行索引', chooseDestination: '选一处风景，重新出发', mainMenu: '主菜单', switchLanguage: '切换到 English',
+    travelIndex: '旅行足迹', chooseDestination: '一路走过的小小风景', mainMenu: '主菜单', switchLanguage: '切换到 English',
     taglineTop: '私人', taglineBottom: '旅行手记',
-    canvas: '积木地球：拖动或使用方向键旋转，点击去过的地点查看相册。也可点击定位图标打开旅行索引，按 Escape 返回地球。',
+    canvas: '积木地球：拖动或使用方向键旋转，点击地点查看相册。也可点击定位图标打开旅行足迹，按 Escape 返回地球。',
     closeAlbum: '关闭相册，返回地球', chooseCity: '选择城市', album: '旅行相册',
     count: '{count} 张', countOne: '{count} 张', preview: '选择本机照片预览',
     previewNotice: '仅在当前页面预览，不会上传或保存。最多 10 张。',
