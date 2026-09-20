@@ -3,6 +3,7 @@
 ## Visual and construction constraints (user preferences)
 
 - The confirmed project/brand name is **Pocket Atlas**, without a leading “A”. The user accepts the name overlap with other projects. Keep page titles, UI branding and documentation consistent.
+- Header: center the stacked Pocket/Atlas words within the left-aligned wordmark. Keep the two top-right icon buttons understated (transparent at rest, subtle hover/open feedback), while preserving 44px touch targets and visible keyboard focus.
 - Shanghai is a hover-only Easter egg: keep its model, tooltip and scatter animation; exclude it from Travel Trails and all album selection/focus flows.
 - The destination menu is called **Travel Trails** / **旅行足迹**. UI direction references the user's Desktop inspration1.jpg, inspiration3.jpg and inspiration4.jpg: retro flat cards, cream background, dark thin outlines, faint grid, mint/yellow/coral accents and structured typography. The user rejected the apricot handwritten scrapbook version: no Caveat, tape, skewed photo frames or decorative wobbly borders. Keep the globe background unchanged.
 
