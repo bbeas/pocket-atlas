@@ -108,6 +108,7 @@ September 试验页面已移出当前工作目录，并在迁移前备份（包�
 发布路径由项目仓库名决定：上传 `dist/` 本身，不要再套一层 `pocket-atlas/`。
 本地资源及 `albums.json` 中的照片路径使用 `./...`，避免以 `/` 开头跑到个人主页根目录。
 
-迁移保留了原 `dev` 分支历史；没有自动推送，也没有修改远端 Pages 设置。
+迁移保留了原 `dev` 分支历史，代码已推送至新仓库。新仓库 Pages 已配置为 GitHub Actions；
+此后的 `dev` 推送会触发自动部署。原 `bbeas.github.io` 仓库及其 Pages 设置未改动。
 
 南极洲轮廓来源：Natural Earth 的 `ne_110m_admin_0_countries.geojson`，来源见数据文件注释。
