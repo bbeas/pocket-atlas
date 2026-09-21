@@ -17,7 +17,8 @@
 
 ## Workflow
 
-- Work in this repository (`bbeas.github.io`), not the old Documents/Codex copy.
+- Work in `/Users/beibei/workdir/pocket-atlas`, remote `https://github.com/bbeas/pocket-atlas.git`. The old `bbeas.github.io` and Documents/Codex copies are retained but no longer the active travel-project workspace.
+- GitHub Pages is a project site at `https://bbeas.github.io/pocket-atlas/`. Keep assets and album photo paths relative; no root-relative URLs or hash-router workaround. The Pages workflow publishes only `dist/` from `dev` after tests/build, and supports manual runs on `dev`.
 - Preview locally on http://127.0.0.1:4173/. Do not push or deploy unless explicitly requested. Commit only when requested.
 - Run the static build and verify relevant desktop/mobile interactions after visual changes.
 - Keep these preferences updated when the user changes them.

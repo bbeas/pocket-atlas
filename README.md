@@ -19,7 +19,7 @@ npm run preview
 ```
 
 构建生成 `dist/`，预览命令只读取构建结果；运行预览前需停止同端口的开发服务。
-所有命令仅在本地运行，没有 `deploy` 命令，也不会 push 或发布。
+以上 npm 命令仅在本地运行，不会 push 或发布。`npm test` 运行全部测试。
 
 ## 文件结构
 
@@ -89,8 +89,25 @@ September 试验页面已移出当前工作目录，并在迁移前备份（包�
 
 ## GitHub Pages
 
-目标远端为 `https://github.com/bbeas/bbeas.github.io.git`。
-后续发布应上传 `dist/` 的内容，而不是把仓库根目录直接作为网站；当前没有配置新的自动部署工作流。
-旧分支和历史保留，远端 Pages 设置未修改。开发和检查点提交均在本地 `dev` 分支；没有 push 或部署。
+项目仓库：`https://github.com/bbeas/pocket-atlas.git`。
+目标网址：`https://bbeas.github.io/pocket-atlas/`，无需 hash 路由。
+本地工作目录：`/Users/beibei/workdir/pocket-atlas`，当前开发分支为 `dev`。
+原 `/Users/beibei/workdir/bbeas.github.io` 完整保留，可另行用于个人主页；不要继续在旧副本中修改旅行项目。
+
+### 首次发布
+
+1. 在 GitHub 仓库的 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
+2. 审查并提交本地迁移配置，然后在本目录执行 `git push -u origin dev`。这会上传代码和该分支的完整历史，并触发部署。
+3. 如有 `github-pages` environment 的分支限制，在 **Settings → Environments → github-pages** 允许 `dev` 部署。
+4. 在 Actions 中查看 **Deploy Pocket Atlas to GitHub Pages**。若首次运行早于 Pages 配置完成，配置后重新运行。
+5. 部署成功后访问目标网址。此项目仓库不接管 `https://bbeas.github.io/` 根首页。
+
+工作流在 `.github/workflows/pages.yml`：Node.js 24 → 测试 → 构建 → 上传 `dist/` → Pages 部署。
+以后推送 `dev` 会更新站点，也可在 Actions 中选择 `dev` 手动运行；手动入口需要工作流位于默认分支。
+仅上传静态构建产物，不上传仓库、脚本或 `.git`。Pages 网站内容是公开的。
+发布路径由项目仓库名决定：上传 `dist/` 本身，不要再套一层 `pocket-atlas/`。
+本地资源及 `albums.json` 中的照片路径使用 `./...`，避免以 `/` 开头跑到个人主页根目录。
+
+迁移保留了原 `dev` 分支历史；没有自动推送，也没有修改远端 Pages 设置。
 
 南极洲轮廓来源：Natural Earth 的 `ne_110m_admin_0_countries.geojson`，来源见数据文件注释。
