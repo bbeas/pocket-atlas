@@ -1,114 +1,138 @@
-# Pocket Atlas · 私人旅行手记
+# Pocket Atlas
 
-以 LEGO 积木风格搭建的 Three.js 交互地球，计划用于展示旅行地点和精选风景照。
+**English** · [简体中文](README.zh-CN.md)
 
-## 本地运行
+A personal travel journal built around an interactive, LEGO-style globe.
 
-需要 Node.js 18+、npm 和 Python 3。当前没有需要安装的 npm 依赖。
+[Explore the live site](https://bbeas.github.io/pocket-atlas/)
+
+## Run locally
+
+Requires Node.js 18+, npm and Python 3. There are currently no npm dependencies to install.
 
 ```sh
 npm start
 ```
 
-打开 http://127.0.0.1:4173/ 。服务直接读取 `src/`，修改源码后刷新网页即可，无热更新。
-端口已被占用时先停止旧的本地预览，不要重复启动。
+Open http://127.0.0.1:4173/. The server reads directly from `src/`; refresh after editing. There is no hot reload. Stop an existing preview before starting another server on the same port.
 
 ```sh
+npm test
 npm run build
 npm run preview
 ```
 
-构建生成 `dist/`，预览命令只读取构建结果；运行预览前需停止同端口的开发服务。
-以上 npm 命令仅在本地运行，不会 push 或发布。`npm test` 运行全部测试。
+The build creates `dist/`. The preview command serves that output on the same port, so stop the development server first. These npm commands do not push or deploy anything.
 
-## 文件结构
+## Project structure
 
-- `src/index.html`：页面 HTML、CSS、Three.js 程序化模型及交互。
-- `src/antarctica-coastline.js`：南极洲海岸线数据。
-- `src/travel-ui.js`、`src/travel-ui.css`：地点菜单、相册侧栏及照片大图浏览。
-- `src/albums.json`：各地点 / 城市的照片清单。
-- `src/i18n.js`：中英文文案、地点名称与语言偏好。
-- `scripts/build.mjs`：将 `src/` 的公开文件递归复制到 `dist/` 并生成 `.nojekyll`。
-- `dist/`：可供 GitHub Pages 使用的静态构建产物，不提交 Git。
+- `src/index.html`: page layout, procedural Three.js models and globe interactions.
+- `src/antarctica-coastline.js`: Antarctic coastline data.
+- `src/travel-ui.js` and `src/travel-ui.css`: destination menu, album panel and photo viewer.
+- `src/destination-policy.js`: separates album destinations from hover-only discoveries.
+- `src/albums.json`: photo lists grouped by destination and city.
+- `src/i18n.js`: English/Chinese strings, place names and language preferences.
+- `scripts/*.test.mjs`: language, destination-policy and project-path tests.
+- `scripts/build.mjs`: copies public files from `src/` into `dist/` and creates `.nojekyll`.
+- `.github/workflows/pages.yml`: GitHub Pages build and deployment.
+- `dist/`: generated static site; excluded from Git.
 
-## 当前实现
+## Features and implementation
 
-原生 JavaScript + Three.js 0.164.1，通过 import map 从 jsDelivr 加载；字体使用 Google Fonts，
-因此首次加载仍需访问这些外部资源。无 React、后端、数据库或相册上传服务。
-地表和普通建筑使用实例化渲染；地标支持地点标签、随机悬浮倾斜及积木散开复位。
-点击去过的地点，会将地球旋转、缩放至地标，再展开相册。桌面使用右侧栏，手机使用底部面板。
-也可以点击右上角定位图标打开「旅行足迹 / Travel Trails」快速选择地点；英国入口内可切换伦敦 / 爱丁堡，日本入口内可切换东京 / 大阪。上海作为彩蛋仅保留 hover 提示和散落动效，不进入列表、不打开相册。相册与下拉菜单采用奶油白、薄荷绿、鹅黄配色的复古平面卡片 UI，搭配深色细描边及淡网格。
-日本仍以东京塔为地图入口，新加坡地标为积木鱼尾狮公园。
-鱼尾狮采用正面朝向、简化长鬃、张口喷水及卷尾结构；保留积木单位，靠减少层数控制体量。
-地标锚点、附近树木和街边建筑吸附到实际地表网格，普通城市建筑继续使用逐格放置。
-项目长期设计约束记录在根目录 `AGENTS.md`，后续修改需保持网格对齐与真实积木拼接感。
-照片支持缩略图、大图及左右方向键切换，Escape 先关闭大图，再关闭相册并恢复原视角。
-拖动地球不会误触相册；纽约和开罗仅作装饰，不开放相册。
-选中地点会保持悬浮散开，其他可见的旅行地标仍可悬停和点击切换。
-手机竖屏概览按屏幕高度取景，球面约占 60% 高度，左右允许裁切。
+Vanilla JavaScript and Three.js 0.164.1, loaded from jsDelivr through an import map. Fonts use Google Fonts, so the initial load requires access to these external services. There is no React, backend, database or photo-upload service.
 
-## 界面语言
+- Instanced terrain and ordinary buildings, with grid-aligned landmark anchors and nearby scenery.
+- Randomized landmark hover height, small tilts and scattered bricks that reassemble when the pointer leaves.
+- Select a destination to rotate and zoom the globe, then open a desktop sidebar or mobile bottom sheet.
+- The selected landmark stays scattered; other visible travel destinations remain interactive. Dragging does not accidentally open an album.
+- **Travel Trails** provides quick navigation. Japan groups Tokyo and Osaka; the United Kingdom groups London and Edinburgh.
+- Shanghai is a hover-only Easter egg: its tooltip and animation remain, but it has no menu entry or album. New York and Cairo are decorative.
+- Japan uses Tokyo Tower; Singapore uses a compact, front-facing brick Merlion with a mane, open mouth, water stream and curled tail. Its size comes from fewer brick courses, not uniform model scaling.
+- Cream, mint and yellow flat-card UI with fine outlines and a subtle grid.
+- Thumbnail gallery, full-size viewer and previous/next arrow-key navigation. Escape closes the viewer first, then the album and restores the overview.
+- In portrait mobile overview, the globe surface occupies approximately 60% of the screen height; horizontal cropping is intentional.
 
-右上角语言图标点击一次直接切换中英文，不使用下拉框。首次访问默认英文，选择通过 `localStorage` 记住。
-切换时不重置地球视角、当前地点或城市。语言仅影响显示，不改变 `albums.json` 的城市键。
-语言测试：`node --test scripts/i18n.test.mjs`。
+Long-term visual and construction constraints are documented in `AGENTS.md`. Preserve the terrain-grid alignment and physically assembled brick appearance.
 
-## 添加照片
+## Languages
 
-照片 `caption` 可继续使用字符串（原样显示），也支持 `{"en":"By the sea","zh":"海边"}`；
-缺少当前语言时回退到另一语言，不自动翻译你的照片文字。
+English is the primary language for documentation, code comments, metadata and default UI copy unless explicitly marked otherwise.
 
-所有相册目前为空，不使用示例风景照片冒充旅行记录。
-「选择本机照片预览」只在当前页面中读取文件，不会上传、写入仓库或持久保存，刷新后清除。
-支持 JPEG、PNG、WebP、AVIF，每张不超过 25MB，每个城市最多 10 张。
+- `README.md` is the default English documentation; [README.zh-CN.md](README.zh-CN.md) is the Chinese version. The links at the top of both files switch between them.
+- The top-right language icon toggles English and Chinese directly. First visits default to English; an explicit selection is remembered in `localStorage`.
+- Switching languages preserves the globe view, selected destination and city.
+- New UI strings belong in `src/i18n.js`, with English entries first and Chinese translations in the `zh` dictionary.
+- Existing Chinese city keys in `albums.json` and the destination definitions are stable data identifiers, not the default display language. Keep them unchanged for compatibility.
+- Explicit translations, language-test fixtures, proper names and user-written photo captions may retain their original language.
 
-要正式保存照片，将处理后的图片放在 `src/photos/<地点>/`，并修改 `src/albums.json`。例如：
+Run all checks with `npm test`, or only language checks with `node --test scripts/i18n.test.mjs`.
+
+## Add photos
+
+All albums are currently empty; sample stock photos are not presented as personal travel records.
+
+**Preview your photos** reads local files in the current page only. It does not upload, write to the repository or persist them. Reloading clears the previews. Supported formats are JPEG, PNG, WebP and AVIF, up to 25 MB per image and 10 photos per city.
+
+To publish photos, put optimized images in `src/photos/<destination>/` and update the matching entry in `src/albums.json`. For example, the Paris entry can contain:
 
 ```json
-"paris": {
-  "cities": {
-    "巴黎": [
-      {
-        "src": "./photos/paris/seine.webp",
-        "thumbnail": "./photos/paris/seine-thumb.webp",
-        "caption": "塞纳河畔的傍晚"
-      }
-    ]
+{
+  "paris": {
+    "cities": {
+      "巴黎": [
+        {
+          "src": "./photos/paris/seine.webp",
+          "thumbnail": "./photos/paris/seine-thumb.webp",
+          "caption": {
+            "en": "An evening by the Seine",
+            "zh": "塞纳河畔的傍晚"
+          }
+        }
+      ]
+    }
   }
 }
 ```
 
-`thumbnail` 可省略，此时使用原图；建议单独生成小尺寸缩略图减少流量。
-路径相对于 `src/`，构建后保持相同目录结构。预览按钮选择的照片不参与构建。
-发布前自行压缩图片并移除不想公开的 EXIF 信息；放进 `src/` 的文件都会成为公开站点资源，
-不要在其中存放原片备份、密钥或其他私密文件。
+Keep the existing city key (`巴黎` in this example). The UI translates its display label.
 
-此次是原有本地项目的原样迁移，不包含 React 重构。原来的 CRA、Bootstrap、联系人路由和
-September 试验页面已移出当前工作目录，并在迁移前备份（包含未提交和未跟踪源码）。
-旧依赖不再需要，`npm install` 也不是启动前提。
+- `thumbnail` is optional; without it the original image is used. Separate thumbnails reduce bandwidth.
+- `caption` accepts a plain string, displayed as written, or an object with `en` and `zh`. Missing translations fall back to the other language; captions are not automatically translated.
+- Image paths are relative to `src/` and retain the same structure after building. Local file-picker previews are not included in the build.
+- Compress photos and remove any EXIF metadata you do not want to publish. Everything under `src/` becomes public site content: do not store original-image backups, credentials or private files there.
 
 ## GitHub Pages
 
-项目仓库：`https://github.com/bbeas/pocket-atlas.git`。
-目标网址：`https://bbeas.github.io/pocket-atlas/`，无需 hash 路由。
-本地工作目录：`/Users/beibei/workdir/pocket-atlas`，当前开发分支为 `dev`。
-原 `/Users/beibei/workdir/bbeas.github.io` 完整保留，可另行用于个人主页；不要继续在旧副本中修改旅行项目。
+- Repository: [bbeas/pocket-atlas](https://github.com/bbeas/pocket-atlas)
+- Site: [bbeas.github.io/pocket-atlas/](https://bbeas.github.io/pocket-atlas/)
+- Development and deployment branch: `dev`
+- Active local workspace: `/Users/beibei/workdir/pocket-atlas`
 
-### 首次发布
+Pages is already configured to use **GitHub Actions**. Pushing `dev` automatically runs tests, builds the site and deploys `dist/`. The workflow uses Node.js 24 and can also be run manually on `dev` from the Actions tab.
 
-1. 在 GitHub 仓库的 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
-2. 审查并提交本地迁移配置，然后在本目录执行 `git push -u origin dev`。这会上传代码和该分支的完整历史，并触发部署。
-3. 如有 `github-pages` environment 的分支限制，在 **Settings → Environments → github-pages** 允许 `dev` 部署。
-4. 在 Actions 中查看 **Deploy Pocket Atlas to GitHub Pages**。若首次运行早于 Pages 配置完成，配置后重新运行。
-5. 部署成功后访问目标网址。此项目仓库不接管 `https://bbeas.github.io/` 根首页。
+### Update the site
 
-工作流在 `.github/workflows/pages.yml`：Node.js 24 → 测试 → 构建 → 上传 `dist/` → Pages 部署。
-以后推送 `dev` 会更新站点，也可在 Actions 中选择 `dev` 手动运行；手动入口需要工作流位于默认分支。
-仅上传静态构建产物，不上传仓库、脚本或 `.git`。Pages 网站内容是公开的。
-发布路径由项目仓库名决定：上传 `dist/` 本身，不要再套一层 `pocket-atlas/`。
-本地资源及 `albums.json` 中的照片路径使用 `./...`，避免以 `/` 开头跑到个人主页根目录。
+After reviewing and committing your changes:
 
-迁移保留了原 `dev` 分支历史，代码已推送至新仓库。新仓库 Pages 已配置为 GitHub Actions；
-此后的 `dev` 推送会触发自动部署。原 `bbeas.github.io` 仓库及其 Pages 设置未改动。
+```sh
+git push origin dev
+```
 
-南极洲轮廓来源：Natural Earth 的 `ne_110m_admin_0_countries.geojson`，来源见数据文件注释。
+Check **Deploy Pocket Atlas to GitHub Pages** in the repository's Actions tab. A successful deployment updates the site.
+
+### Initial setup for a new repository
+
+1. In **Settings → Pages → Build and deployment → Source**, select **GitHub Actions**.
+2. Commit the project and workflow, then push `dev` with `git push -u origin dev`. This uploads the code and the branch's full history.
+3. If the `github-pages` environment restricts deployment branches, allow `dev` under **Settings → Environments → github-pages**.
+4. Check the workflow run. If it ran before Pages was enabled, rerun it after configuring Pages. Manual workflow dispatch requires the workflow to be on the default branch.
+
+Only the static build output is uploaded as the Pages artifact, not repository metadata or development scripts. The website is public. Upload `dist/` directly; do not wrap it in another `pocket-atlas/` directory. Use relative `./...` asset and photo URLs rather than root-relative `/...` paths. No hash router is required.
+
+This project does not take over `https://bbeas.github.io/`. The original `bbeas.github.io` repository, local copy and Pages settings remain unchanged.
+
+## Migration and attribution
+
+The migration preserved the original `dev` history and did not introduce React. Legacy CRA, Bootstrap, contact-route and September experiment code was backed up and moved out of the working tree. Old dependencies are no longer needed.
+
+Antarctic coastline data is derived from Natural Earth's `ne_110m_admin_0_countries.geojson`; see the source comments in `src/antarctica-coastline.js`.

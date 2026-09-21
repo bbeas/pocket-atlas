@@ -263,6 +263,8 @@
       const landmarks = [], landmarkHitboxes = [];
       // Geographic coordinates remain separate from gently separated display positions.
       // Country entries group nearby cities while keeping separate photo albums.
+      // Chinese name/city values are stable localization and album keys, not default UI copy.
+      // Render labels through placeName(); English is the default display language.
       const destinations = [
         {id:'paris',name:'巴黎',lat:48.86,lon:2.29,type:'tower',width:.92,depth:.76,cities:['巴黎']},
         {id:'japan',name:'日本',lat:35.66,lon:139.745,type:'tokyo-tower',width:1.10,depth:.95,cities:['东京','大阪']},

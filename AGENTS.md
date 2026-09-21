@@ -17,6 +17,8 @@
 
 ## Workflow
 
+- English is the primary language for code comments, documentation, metadata and default UI text unless explicitly marked otherwise. `README.md` is English; `README.zh-CN.md` is Chinese, with reciprocal language links at the top. Keep both documents in sync. Explicit Chinese translations, localization tests, stable legacy city keys and user-authored captions are exceptions; do not translate data identifiers or user content indiscriminately.
+
 - Work in `/Users/beibei/workdir/pocket-atlas`, remote `https://github.com/bbeas/pocket-atlas.git`. The old `bbeas.github.io` and Documents/Codex copies are retained but no longer the active travel-project workspace.
 - GitHub Pages is a project site at `https://bbeas.github.io/pocket-atlas/`. Keep assets and album photo paths relative; no root-relative URLs or hash-router workaround. The Pages workflow publishes only `dist/` from `dev` after tests/build, and supports manual runs on `dev`.
 - Preview locally on http://127.0.0.1:4173/. Do not push or deploy unless explicitly requested. Commit only when requested.

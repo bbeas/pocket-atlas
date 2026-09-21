@@ -39,7 +39,7 @@ export const messages = {
   },
 };
 
-// Album keys remain stable. Only labels change with the interface language.
+// Legacy Chinese album/place keys remain stable for compatibility; English is the default label.
 const placeNames = {
   '巴黎': 'Paris', '日本': 'Japan', '东京': 'Tokyo', '大阪': 'Osaka',
   '纽约': 'New York', '开罗': 'Cairo', '上海': 'Shanghai', '济州岛': 'Jeju Island',
