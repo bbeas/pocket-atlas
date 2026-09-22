@@ -6,16 +6,20 @@ export const messages = {
     taglineTop: 'A PERSONAL', taglineBottom: 'TRAVEL JOURNAL',
     canvas: 'Brick globe: drag or use the arrow keys to rotate. Select a place to browse photos, or open the pin icon for Travel Trails. Press Escape to return to the globe.',
     closeAlbum: 'Close album and return to the globe', chooseCity: 'Choose a city', album: 'Travel album',
-    count: '{count} photos', countOne: '{count} photo', preview: 'Preview your photos',
-    previewNotice: 'Local preview only. Nothing is uploaded or saved. Up to 10 photos.',
+    count: '{count} photos', countOne: '{count} photo', preview: 'Add Photos',
+    previewNotice: 'Your photos stay on your device and are never uploaded. Clearing your browser cache may delete them. Up to 10 photos per city.',
+    saving: 'Saving…', storageUnavailable: 'Photo storage is unavailable. Allow site storage and reopen this place to try again.',
+    saveFailed: 'Photos could not be saved. Storage may be full or blocked. Your existing photos have not been replaced.',
+    albumFull: 'This city has 10 photos. Open one of your added photos to remove it before adding more.',
+    removePhoto: 'Remove photo', removeConfirm: 'Remove this photo from this browser? Your original file will not be deleted.', photoRemoved: 'Photo removed from this browser.',
     photoViewer: 'Photo viewer', closePhoto: 'Close photo', previous: 'Previous photo', next: 'Next photo',
     photoError: 'This photo could not be loaded. Please try again later.',
     thumbnailError: 'Photo {number} could not be loaded', viewPhoto: 'View photo: {caption}',
     albumError: 'The album is unavailable', loading: 'Opening the album…', emptyTitle: 'Little moments, collected',
     albumErrorCopy: 'The photo list could not be loaded. Please try again.',
     emptyCopy: 'No photos from {city} yet.', loadingCopy: 'Your memories are on their way.', retry: 'Try again',
-    invalidFiles: 'Choose JPEG, PNG, WebP or AVIF images, up to 25 MB each.',
-    previewReady: 'Previewing {count} photos. Refreshing the page will clear them.',
+    invalidFiles: 'Choose a readable image up to 25 MB. JPEG, PNG, WebP and AVIF are supported. If an iPhone HEIC photo cannot open, export it as JPEG.',
+    previewReady: 'Photos saved on this device: {count}.',
     skippedFiles: 'Some files were skipped because of their format, size or the 10-photo limit.',
   },
   zh: {
@@ -25,16 +29,20 @@ export const messages = {
     taglineTop: '私人', taglineBottom: '旅行手记',
     canvas: '积木地球：拖动或使用方向键旋转，点击地点查看相册。也可点击定位图标打开旅行足迹，按 Escape 返回地球。',
     closeAlbum: '关闭相册，返回地球', chooseCity: '选择城市', album: '旅行相册',
-    count: '{count} 张', countOne: '{count} 张', preview: '选择本机照片预览',
-    previewNotice: '仅在当前页面预览，不会上传或保存。最多 10 张。',
+    count: '{count} 张', countOne: '{count} 张', preview: '添加照片',
+    previewNotice: '照片只存在你自己的设备上，不会上传。清理浏览器缓存可能会删除照片。每个城市最多 10 张。',
+    saving: '正在保存…', storageUnavailable: '无法使用本地照片存储。请允许网站存储后，重新打开此地点重试。',
+    saveFailed: '照片保存失败，存储空间可能已满或被禁用。已有照片未被替换。',
+    albumFull: '此城市已有 10 张照片。可以打开自己添加的照片，移除后再添加。',
+    removePhoto: '移除照片', removeConfirm: '从此浏览器移除这张照片？不会删除你的原始文件。', photoRemoved: '照片已从此浏览器移除。',
     photoViewer: '照片大图', closePhoto: '关闭大图', previous: '上一张', next: '下一张',
     photoError: '这张照片暂时无法加载，请稍后重试。',
     thumbnailError: '照片 {number} 暂时无法加载', viewPhoto: '查看照片：{caption}',
     albumError: '相册暂时无法加载', loading: '正在打开相册…', emptyTitle: '风景，慢慢收藏',
     albumErrorCopy: '照片清单读取失败，可以重试。',
     emptyCopy: '还没有添加{city}的照片。', loadingCopy: '正在读取照片清单。', retry: '重新加载',
-    invalidFiles: '请选择 JPEG、PNG、WebP 或 AVIF 图片，每张不超过 25MB。',
-    previewReady: '已预览 {count} 张照片，刷新页面后会清除。',
+    invalidFiles: '请选择可读取且不超过 25MB 的图片。支持 JPEG、PNG、WebP、AVIF；若 iPhone 的 HEIC 照片无法打开，请导出为 JPEG。',
+    previewReady: '已在当前设备保存 {count} 张照片。',
     skippedFiles: '部分文件因格式、大小或数量限制未加入。',
   },
 };
@@ -55,7 +63,7 @@ let language = 'en';
 try { language = readLanguage(globalThis.localStorage); } catch { /* Storage may be unavailable. */ }
 const listeners = new Set();
 export const getLanguage = () => language;
-export const placeName = name => language === 'en' ? placeNames[name] || name : name;
+export const placeName = (name, locale = language) => locale === 'en' ? placeNames[name] || name : name;
 export function localizedContent(value) {
   if (typeof value === 'string') return value;
   if (!value || typeof value !== 'object') return '';

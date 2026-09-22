@@ -6,6 +6,7 @@
 - Header: center the stacked Pocket/Atlas words within the left-aligned wordmark. Keep the two top-right icon buttons understated (transparent at rest, subtle hover/open feedback), while preserving 44px touch targets and visible keyboard focus.
 - Shanghai is a hover-only Easter egg: keep its model, tooltip and scatter animation; exclude it from Travel Trails and all album selection/focus flows.
 - The destination menu is called **Travel Trails** / **旅行足迹**. UI direction references the user's Desktop inspration1.jpg, inspiration3.jpg and inspiration4.jpg: retro flat cards, cream background, dark thin outlines, faint grid, mint/yellow/coral accents and structured typography. The user rejected the apricot handwritten scrapbook version: no Caveat, tape, skewed photo frames or decorative wobbly borders. Keep the globe background unchanged.
+- Sort Travel Trails by English destination name A–Z in both languages. Hide the album scrollbar without disabling scrolling or reserving a scrollbar gutter. Keep local-photo notices small and plain-language.
 
 - This is a LEGO-style travel globe. Buildings should look physically assembled onto the terrain, not like rotated display plates placed over it.
 - Align landmark anchors and ordinary city buildings with the underlying terrain grid as closely as the curved surface permits: use actual terrain-cell centers, face normals, and local grid axes.
@@ -25,4 +26,5 @@
 - Run the static build and verify relevant desktop/mobile interactions after visual changes.
 - Keep these preferences updated when the user changes them.
 - UI supports English and Chinese, defaults to English on a first visit, and remembers an explicit choice. Keep all new UI text in `src/i18n.js`; preserve stable destination IDs and existing album-city keys when translating labels.
+- Add Photos is a visitor-facing local album feature. Store optimized image blobs and thumbnails in IndexedDB, not localStorage; append rather than replace, scope photos by destination/city, keep a 10-photo city limit, and never upload them. Explain device/browser-only storage, no sync and possible loss when site data is cleared. Preserve mobile file selection, reload persistence, deletion and honest storage-error feedback.
 - Top-right navigation is icon-only: a location pin opens Travel Trails for quick destination selection; a language icon toggles English/Chinese directly. No Explore/About text links or language select dropdown. Preserve accessible labels and keyboard focus feedback.

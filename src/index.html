@@ -7,7 +7,7 @@
     <meta name="description" content="A personal travel journal, one little brick-built place at a time." />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d4a57'/%3E%3Ccircle cx='16' cy='16' r='10' fill='%238dcec0'/%3E%3Cpath d='M7 16h18M16 6v20' stroke='%23fff5dc' stroke-width='2'/%3E%3C/svg%3E" />
     <title>Pocket Atlas — A Personal Travel Journal</title>
-    <link rel="stylesheet" href="./travel-ui.css?v=quiet-header">
+    <link rel="stylesheet" href="./travel-ui.css?v=local-photos">
     <style>
       @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Serif+SC:wght@500&display=swap');
       :root { --ink:#173c47; --paper:#fff7df; --aqua:#94ded0; --coral:#ee8569; --sun:#f7c85b; }
@@ -41,14 +41,14 @@
       </nav>
     </header>
     <div class="tooltip" id="tooltip" role="tooltip"></div>
-    <script type="module" src="./i18n.js?v=travel-trails"></script>
+    <script type="module" src="./i18n.js?v=local-photos"></script>
     <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}</script>
     <script type="module">
       import * as THREE from 'three';
       import { antarcticaCoastline } from './antarctica-coastline.js';
-      import { createTravelUI } from './travel-ui.js?v=field-notes';
+      import { createTravelUI } from './travel-ui.js?v=local-photos';
       import { canBrowsePlace } from './destination-policy.js';
-      import { t, placeName, onLanguageChange } from './i18n.js?v=travel-trails';
+      import { t, placeName, onLanguageChange } from './i18n.js?v=local-photos';
 
       const scene = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(-8, 8, 6.5, 0, .1, 60);
@@ -997,6 +997,7 @@
         if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
         if(e.type==='pointercancel')velocity.set(0,0);
         if(target&&target===pressedLandmark){velocity.set(0,0);focusDestination(target.userData.id);}
+        else if(clicked&&selectedLandmark&&!target&&!pressedLandmark)closeDestination();
         pressedLandmark=null;
       }
       canvas.addEventListener('pointerup',release);

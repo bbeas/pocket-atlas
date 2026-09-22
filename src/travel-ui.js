@@ -1,6 +1,7 @@
-// DOM UI stays independent of Three.js. Photo previews are local, never uploaded.
-import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=travel-trails';
+// DOM UI stays independent of Three.js. Personal photos are saved only on this device.
+import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=local-photos';
 import { canBrowsePlace } from './destination-policy.js';
+import { readPhotos, appendPhotos, deletePhoto, preparePhoto, MAX_PHOTOS } from './photo-storage.js';
 export function createTravelUI({ destinations, onSelect, onClose }) {
   const panel=document.createElement('aside');
   panel.className='album-panel';panel.hidden=true;panel.inert=true;
@@ -10,21 +11,39 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     <div class="album-body"><div class="album-meta"><span data-i18n="album"></span><span data-count></span></div>
     <div class="photo-grid"></div><div class="album-empty"></div>
     <div class="album-footer"><button class="preview-button" data-preview data-i18n="preview"></button>
-    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden>
+    <input type="file" accept="image/*" multiple hidden>
     <p class="album-notice" data-i18n="previewNotice"></p><p class="album-notice" role="status" data-status></p></div></div>`;
   document.body.append(panel);
   const viewer=document.createElement('dialog');viewer.className='photo-viewer';
   viewer.dataset.i18nLabel='photoViewer';
   viewer.innerHTML=`<div class="viewer-top"><span data-position></span><button class="round-button" data-close data-i18n-label="closePhoto">×</button></div>
     <div class="viewer-image-wrap"><img class="viewer-image" alt=""><p hidden data-i18n="photoError"></p></div>
-    <div class="viewer-footer"><button data-prev data-i18n-label="previous">←</button><p class="viewer-caption"></p><button data-next data-i18n-label="next">→</button></div>`;
+    <div class="viewer-footer"><button data-prev data-i18n-label="previous">←</button><p class="viewer-caption"></p><button data-next data-i18n-label="next">→</button></div><button class="remove-photo" data-remove data-i18n="removePhoto" hidden></button>`;
   document.body.append(viewer);
   const title=panel.querySelector('h2'),grid=panel.querySelector('.photo-grid'),empty=panel.querySelector('.album-empty');
   const tabs=panel.querySelector('.city-tabs'),input=panel.querySelector('input'),status=panel.querySelector('[data-status]');
   let active=null,city='',manifest=null,loadError=false,photos=[],photoIndex=0,lastCard=null,statusMessage=null;
   const captionFor=(photo,index)=>localizedContent(photo.caption)||`${placeName(city)} · ${index+1}`;
   const localAlbums=new Map();
+  const localErrors=new Set(), loadingAlbums=new Map();
+  const addButton=panel.querySelector('[data-preview]');
+  let busy=false,pickerAlbum=null;
   const key=()=>`${active.id}/${city}`;
+  async function loadLocal(album,force=false) {
+    if(loadingAlbums.has(album))return loadingAlbums.get(album);
+    if(localAlbums.has(album)&&!force)return;
+    const pending=(async()=>{
+      try {
+        const rows=await readPhotos(album);
+        const previous=localAlbums.get(album)||[];
+        localAlbums.set(album,rows.map(row=>({...row,src:URL.createObjectURL(row.blob),thumbnail:URL.createObjectURL(row.thumbnailBlob)})));
+        for(const photo of previous){URL.revokeObjectURL(photo.src);URL.revokeObjectURL(photo.thumbnail);}
+        localErrors.delete(album);
+      } catch {localErrors.add(album);}
+      finally {loadingAlbums.delete(album);if(active&&key()===album)render();}
+    })();
+    loadingAlbums.set(album,pending);return pending;
+  }
   async function loadAlbums() {
     loadError=false;
     try {
@@ -41,9 +60,9 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     try { const url=new URL(value,import.meta.url);return ['https:','http:'].includes(url.protocol)?url.href:null; }
     catch { return null; }
   }
-  function getPhotos() {
-    if(localAlbums.has(key()))return localAlbums.get(key());
-    const entries=manifest?.[active.id]?.cities?.[city];
+  function publishedPhotos(album=key()) {
+    const [destination,albumCity]=album.split('/');
+    const entries=manifest?.[destination]?.cities?.[albumCity];
     if(!Array.isArray(entries))return [];
     return entries.slice(0,10).flatMap((entry,i)=>{
       if(!entry || typeof entry!=='object')return [];
@@ -51,16 +70,20 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
       return [{src,thumbnail:imageURL(entry.thumbnail)||src,caption:entry.caption}];
     });
   }
+  function getPhotos() {return [...publishedPhotos(),...(localAlbums.get(key())||[])];}
   function render() {
     if(!active)return;
     photos=getPhotos();grid.replaceChildren();empty.replaceChildren();
     title.textContent=placeName(active.name);
-    status.textContent=statusMessage?t(statusMessage.key,statusMessage)+(statusMessage.skipped?' '+t('skippedFiles'):''):'';
+    status.textContent=localErrors.has(key())?t('storageUnavailable'):statusMessage?t(statusMessage.key,statusMessage)+(statusMessage.skipped?' '+t('skippedFiles'):''):'';
+    addButton.disabled=busy||!localAlbums.has(key())||localErrors.has(key())||(manifest===null&&!loadError);
+    addButton.textContent=t(busy?'saving':'preview');
+    addButton.setAttribute('aria-busy',String(busy));
     panel.querySelector('[data-count]').textContent=t(photos.length===1?'countOne':'count',{count:String(photos.length).padStart(2,'0')});
     tabs.replaceChildren();tabs.hidden=active.cities.length<2;
     for(const name of active.cities) {
       const button=document.createElement('button');button.textContent=placeName(name);button.setAttribute('aria-pressed',String(city===name));
-      button.onclick=()=>{city=name;statusMessage=null;render();tabs.querySelector('[aria-pressed="true"]').focus();};tabs.append(button);
+      button.onclick=()=>{city=name;statusMessage=null;render();loadLocal(key());tabs.querySelector('[aria-pressed="true"]').focus();};tabs.append(button);
     }
     grid.hidden=photos.length===0;empty.hidden=photos.length>0;
     photos.forEach((photo,index)=>{
@@ -75,7 +98,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
       const frames=document.createElement('div');frames.className='empty-frames';frames.setAttribute('aria-hidden','true');
       frames.innerHTML=`<svg viewBox="0 0 240 152" fill="none" focusable="false" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M24 123c-30-51 33-48 42-67s-2-31-20-28M170 120c59 26 76-6 53-34" stroke-dasharray="4 5"/><rect x="61" y="21" width="123" height="110" rx="8" fill="#b9d8c3"/><path d="M71 42h103M71 62h103M71 82h103M71 102h103M84 31v90M104 31v90M124 31v90M144 31v90M164 31v90" stroke-opacity=".16"/><rect x="42" y="48" width="124" height="79" rx="8" fill="#fcf6e9"/><path d="m80 48 7-12h32l7 12" fill="#f5cc62"/><path d="M43 70h122"/><circle cx="104" cy="88" r="25" fill="#f5cc62"/><circle cx="104" cy="88" r="17" fill="#fcf6e9"/><path d="M94 88a10 10 0 0 1 10-10"/><rect x="51" y="56" width="16" height="7" rx="2" fill="#b9d8c3"/><circle cx="147" cy="59" r="3" fill="#ef805c"/><path d="M211 40c0 13-17 27-17 27s-17-14-17-27a17 17 0 1 1 34 0Z" fill="#ef805c"/><circle cx="194" cy="40" r="5" fill="#fcf6e9"/><path d="M30 64v10m-5-5h10M204 110v10m-5-5h10"/></svg>`;
       const heading=document.createElement('h3'),copy=document.createElement('p');
-      const hasLocal=localAlbums.has(key());
+      const hasLocal=(localAlbums.get(key())||[]).length>0;
       heading.textContent=t(loadError&&!hasLocal?'albumError':manifest===null&&!hasLocal?'loading':'emptyTitle');
       copy.textContent=t(loadError&&!hasLocal?'albumErrorCopy':manifest===null&&!hasLocal?'loadingCopy':'emptyCopy',{city:placeName(city)});
       empty.append(frames,heading,copy);
@@ -91,6 +114,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     viewer.querySelector('.viewer-caption').textContent=captionFor(photo,photoIndex);
     viewer.querySelector('[data-prev]').disabled=photoIndex===0;
     viewer.querySelector('[data-next]').disabled=photoIndex===photos.length-1;
+    viewer.querySelector('[data-remove]').hidden=!photo.id;
   }
   function step(direction){photoIndex=Math.max(0,Math.min(photos.length-1,photoIndex+direction));renderViewer();}
   viewer.querySelector('[data-close]').onclick=()=>viewer.close();
@@ -99,24 +123,49 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   viewer.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();event.stopPropagation();step(event.key==='ArrowLeft'?-1:1);}});
   viewer.addEventListener('close',()=>{viewer.querySelector('img').removeAttribute('src');if(lastCard?.isConnected)lastCard.focus();});
   panel.querySelector('[data-close]').onclick=onClose;
-  panel.querySelector('[data-preview]').onclick=()=>input.click();
-  input.addEventListener('change',()=>{
-    if(!active)return;
-    const supported=new Set(['image/jpeg','image/png','image/webp','image/avif']);
-    const all=[...input.files],valid=all.filter(file=>supported.has(file.type)&&file.size<=25*1024*1024),chosen=valid.slice(0,10);
-    input.value='';
-    if(!chosen.length){statusMessage={key:'invalidFiles'};status.textContent=t('invalidFiles');return;}
-    for(const photo of localAlbums.get(key())||[])URL.revokeObjectURL(photo.src);
-    localAlbums.set(key(),chosen.map(file=>{const src=URL.createObjectURL(file);return {src,thumbnail:src,caption:file.name.replace(/\.[^.]+$/,'')};}));
-    statusMessage={key:'previewReady',count:chosen.length,skipped:all.length!==chosen.length};render();
+  addButton.onclick=()=>{
+    if(!active||busy)return;
+    if(photos.length>=MAX_PHOTOS){statusMessage={key:'albumFull'};render();return;}
+    pickerAlbum=key();input.click();
+  };
+  input.addEventListener('change',async()=>{
+    const album=pickerAlbum,files=[...input.files];input.value='';
+    if(!album||!files.length||busy)return;
+    busy=true;statusMessage=null;render();
+    let message;
+    try {
+      await loadLocal(album,true);
+      if(localErrors.has(album))throw new Error('Storage unavailable');
+      const limit=MAX_PHOTOS-publishedPhotos(album).length;
+      const room=Math.max(0,limit-(localAlbums.get(album)||[]).length);
+      const prepared=[];
+      // Decode sequentially to avoid holding several phone-camera originals in memory.
+      for(const file of files){if(prepared.length>=room)break;try{prepared.push(await preparePhoto(file));}catch{/* Report skipped/unsupported images below. */}}
+      if(!room)message={key:'albumFull'};
+      else if(!prepared.length)message={key:'invalidFiles'};
+      else {
+        const count=await appendPhotos(album,prepared,limit);
+        message={key:count?'previewReady':'albumFull',count,skipped:files.length!==count};
+        await loadLocal(album,true);
+      }
+    } catch {message={key:'saveFailed'};}
+    finally {busy=false;if(active&&key()===album)statusMessage=message;render();}
   });
+  viewer.querySelector('[data-remove]').onclick=async()=>{
+    const photo=photos[photoIndex],album=active&&key();
+    if(!photo?.id||busy||!confirm(t('removeConfirm')))return;
+    busy=true;viewer.close();render();
+    try {await deletePhoto(photo.id);await loadLocal(album,true);if(active&&key()===album)statusMessage={key:'photoRemoved'};}
+    catch {if(active&&key()===album)statusMessage={key:'saveFailed'};}
+    finally {busy=false;render();if(active&&key()===album)addButton.focus();}
+  };
   const menu=document.createElement('div');menu.className='place-menu';menu.hidden=true;menu.id='place-menu';
   const menuTitle=document.createElement('p');menuTitle.className='place-menu-title';menuTitle.dataset.i18n='travelIndex';menu.append(menuTitle);
   const menuSubtitle=document.createElement('p');menuSubtitle.className='place-menu-subtitle';menuSubtitle.dataset.i18n='chooseDestination';menu.append(menuSubtitle);
   const placesButton=document.querySelector('[data-places]');placesButton.setAttribute('aria-controls',menu.id);placesButton.setAttribute('aria-expanded','false');
   function hideMenu(){menu.hidden=true;placesButton.setAttribute('aria-expanded','false');}
   const menuLabels=[];
-  for(const destination of destinations.filter(canBrowsePlace)) {
+  for(const destination of destinations.filter(canBrowsePlace).sort((a,b)=>placeName(a.name,'en').localeCompare(placeName(b.name,'en'),'en'))) {
     const button=document.createElement('button');
     const number=document.createElement('span');number.className='place-number';number.setAttribute('aria-hidden','true');number.textContent=String(menuLabels.length+1).padStart(2,'0');
     const label=document.createElement('span');label.textContent=placeName(destination.name);
@@ -128,6 +177,21 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   document.body.append(menu);
   placesButton.onclick=()=>{menu.hidden=!menu.hidden;placesButton.setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button').focus();};
   document.addEventListener('pointerdown',event=>{if(!menu.contains(event.target)&&!placesButton.contains(event.target))hideMenu();});
+  // Canvas taps are handled by the globe, where landmark selection takes priority.
+  const outsideAlbum=target=>target instanceof Element&&!panel.contains(target)&&!viewer.contains(target)&&!menu.contains(target)&&!target.closest('canvas,nav,button,a,input,select,textarea');
+  let outsidePress=null;
+  document.addEventListener('pointerdown',event=>{
+    outsidePress=event.isPrimary&&event.button===0&&active&&!viewer.open&&outsideAlbum(event.target)
+      ?{id:event.pointerId,x:event.clientX,y:event.clientY}:null;
+  });
+  document.addEventListener('pointermove',event=>{
+    if(outsidePress&&Math.hypot(event.clientX-outsidePress.x,event.clientY-outsidePress.y)>6)outsidePress=null;
+  });
+  document.addEventListener('pointercancel',()=>{outsidePress=null;});
+  document.addEventListener('pointerup',event=>{
+    const press=outsidePress;outsidePress=null;
+    if(press&&press.id===event.pointerId&&active&&!viewer.open&&outsideAlbum(event.target)&&Math.hypot(event.clientX-press.x,event.clientY-press.y)<=6)onClose();
+  });
   menu.addEventListener('keydown',event=>{
     const index=menuLabels.findIndex(({button})=>button===document.activeElement);
     if(index<0)return;
@@ -155,7 +219,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     prepare(place){if(!canBrowsePlace(place))return;if(viewer.open)viewer.close();active=place;city=place.cities[0];statusMessage=null;title.textContent=placeName(place.name);
       updateMenuSelection();
       panel.querySelector('.album-coordinate').textContent=`${Math.abs(place.lat).toFixed(2)}° ${place.lat<0?'S':'N'}  /  ${Math.abs(place.lon).toFixed(2)}° ${place.lon<0?'W':'E'}`;
-      panel.hidden=false;panel.inert=true;panel.classList.remove('is-open');render();panel.scrollTop=0;},
+      panel.hidden=false;panel.inert=true;panel.classList.remove('is-open');render();loadLocal(key(),true);panel.scrollTop=0;},
     show(){if(!active)return;panel.inert=false;panel.classList.add('is-open');panel.querySelector('[data-close]').focus({preventScroll:true});},
     close(){if(viewer.open)viewer.close();active=null;updateMenuSelection();panel.inert=true;panel.classList.remove('is-open');},
     isModalOpen:()=>viewer.open,

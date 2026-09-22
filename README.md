@@ -71,7 +71,11 @@ Run all checks with `npm test`, or only language checks with `node --test script
 
 All albums are currently empty; sample stock photos are not presented as personal travel records.
 
-**Preview your photos** reads local files in the current page only. It does not upload, write to the repository or persist them. Reloading clears the previews. Supported formats are JPEG, PNG, WebP and AVIF, up to 25 MB per image and 10 photos per city.
+**Add Photos** lets visitors select images on desktop or mobile and save them in this browser's IndexedDB, separately for each destination/city. Adding more photos appends to the album, and saved photos survive reloads. Open an added photo to remove it from the local album; the original file is untouched.
+
+Photos are never uploaded, written to the repository or synced between devices. Clearing site data, private browsing or browser storage eviction can remove them: keep your originals. Localhost and the published website have separate storage. IndexedDB is scoped to the origin, not an authentication boundary between projects on the same domain.
+
+Images are optimized to a maximum 1920px edge with 480px thumbnails before saving. Supported formats are JPEG, PNG, WebP and AVIF, up to 25 MB per input file and 10 photos per city (including published photos). HEIC/HEIF works only if the browser can decode it; otherwise export as JPEG. Storage and decode failures are reported without replacing existing photos.
 
 To publish photos, put optimized images in `src/photos/<destination>/` and update the matching entry in `src/albums.json`. For example, the Paris entry can contain:
 
@@ -98,7 +102,7 @@ Keep the existing city key (`巴黎` in this example). The UI translates its dis
 
 - `thumbnail` is optional; without it the original image is used. Separate thumbnails reduce bandwidth.
 - `caption` accepts a plain string, displayed as written, or an object with `en` and `zh`. Missing translations fall back to the other language; captions are not automatically translated.
-- Image paths are relative to `src/` and retain the same structure after building. Local file-picker previews are not included in the build.
+- Image paths are relative to `src/` and retain the same structure after building. Visitor-added local photos are not included in the build.
 - Compress photos and remove any EXIF metadata you do not want to publish. Everything under `src/` becomes public site content: do not store original-image backups, credentials or private files there.
 
 ## GitHub Pages

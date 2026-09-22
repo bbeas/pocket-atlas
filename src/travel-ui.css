@@ -60,9 +60,14 @@ html[lang="zh-CN"] .album-panel h2 { font-size:32px;letter-spacing:.06em; }
 .preview-button { display:inline-flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:43px;padding:11px 14px;border:var(--ui-line);border-radius:5px;background:var(--ui-yellow);color:var(--ui-ink);font-size:11px; }
 .preview-button::after { content:'↗';font-size:18px;line-height:1; }
 .preview-button:hover { background:var(--ui-coral); }
+.preview-button:disabled { opacity:.55;cursor:wait; }
+.remove-photo { display:block;min-height:44px;margin:0 18px 18px;padding:10px 15px;background:var(--ui-paper);color:var(--ui-ink);border:var(--ui-line);border-radius:5px;font-size:12px; }
+.remove-photo:hover { background:var(--ui-coral); }
 .album-empty .preview-button { margin-top:16px; }
 .album-footer { margin-top:13px;padding-top:21px;border-top:var(--ui-line); }
-.album-notice { margin:12px 0 0;font-size:10px; }
+.album-notice { margin:12px 0 0;font-size:9px; }
+.album-panel { scrollbar-width:none;scrollbar-gutter:auto; }
+.album-panel::-webkit-scrollbar { display:none;width:0;height:0; }
 .album-notice:empty { display:none; }
 .photo-viewer { padding:0;border:var(--ui-line);width:min(1100px,94vw);max-width:none;max-height:94dvh;border-radius:14px;background:var(--ui-paper);color:var(--ui-ink);box-shadow:0 30px 100px #071b2440; }
 .photo-viewer::backdrop { background:#1c302dcc;backdrop-filter:blur(6px); }
