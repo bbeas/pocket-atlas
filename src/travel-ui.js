@@ -89,7 +89,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     photos.forEach((photo,index)=>{
       const description=captionFor(photo,index);
       const button=document.createElement('button');button.className='photo-card';button.setAttribute('aria-label',t('viewPhoto',{caption:description}));
-      const img=document.createElement('img');img.src=photo.thumbnail;img.alt=description;img.loading='lazy';img.decoding='async';
+      const img=document.createElement('img');img.src=index===0?photo.src:photo.thumbnail;img.alt=description;img.loading='lazy';img.decoding='async';
       const caption=document.createElement('span');caption.textContent=description;
       img.onerror=()=>{img.hidden=true;caption.textContent=t('thumbnailError',{number:index+1});caption.className='photo-error';};
       button.append(img,caption);button.onclick=()=>{lastCard=button;photoIndex=index;renderViewer();viewer.showModal();};grid.append(button);
