@@ -69,6 +69,31 @@ html[lang="zh-CN"] .album-panel h2 { font-size:32px;letter-spacing:.06em; }
 .album-panel { scrollbar-width:none;scrollbar-gutter:auto; }
 .album-panel::-webkit-scrollbar { display:none;width:0;height:0; }
 .album-notice:empty { display:none; }
+.album-title-row { position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:13px; }
+.album-panel .album-title-row h2 { min-width:0;margin:0; }
+.visit-dates { flex-shrink:0;margin:0;font-size:11px;color:var(--ui-muted); }
+.visit-dates summary { white-space:nowrap;text-align:right;display:flex;align-items:center;gap:6px; }
+.visit-dates summary svg { width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.2; }
+.visit-editor { position:fixed;z-index:30;width:264px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);box-sizing:border-box;background:var(--ui-paper);color:var(--ui-ink);border:var(--ui-line);border-radius:12px;box-shadow:4px 4px 0 #30352f30;overflow:auto;overscroll-behavior:contain; }
+.visit-dates summary { width:fit-content;list-style:none;cursor:pointer;padding:10px 0; }
+.visit-dates summary::-webkit-details-marker { display:none; }
+.visit-dates summary:hover { color:var(--ui-ink); }
+.visit-picker-heading { padding:10px 14px;background:var(--ui-mint);border-bottom:var(--ui-line);font-size:10px;letter-spacing:.06em; }
+.visit-year-bar { display:flex;align-items:center;justify-content:space-between;padding:5px 10px; }
+.visit-year-bar button { width:44px;height:44px;border:0;border-radius:6px;background:transparent;color:var(--ui-ink);font-size:23px; }
+.visit-year-bar select { min-width:0;max-width:110px;min-height:44px;border:0;background:transparent;color:var(--ui-ink);font-family:inherit;font-size:16px;font-weight:600;text-align:center; }
+.visit-year-bar button:hover { background:var(--ui-mint); }
+.visit-year-bar button:disabled { opacity:.3;cursor:default; }
+.visit-month-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:0 12px 12px; }
+.visit-month-grid button { min-height:44px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ui-ink);font:inherit;font-size:12px; }
+.visit-month-grid button:hover { background:#b9d8c355;border-color:#30352f30; }
+.visit-month-grid button[aria-pressed="true"] { background:var(--ui-yellow);border:var(--ui-line);box-shadow:2px 2px 0 var(--ui-ink); }
+.visit-picker-footer { display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 12px;border-top:1px solid #30352f26;color:var(--ui-muted);font-size:10px; }
+.visit-picker-footer button { min-height:44px;padding:0;border:0;background:transparent;color:var(--ui-muted);font:inherit;text-decoration:underline;text-underline-offset:3px; }
+.visit-picker-footer button:disabled { opacity:.4;cursor:default; }
+.visit-editor .album-notice { padding:0 12px 10px;margin:0;color:#994630; }
+.visit-editor :focus-visible { outline:2px solid #39736f;outline-offset:-3px; }
+@media(pointer:coarse) { .visit-dates summary { min-height:44px;box-sizing:border-box;display:flex;align-items:center; } }
 .photo-viewer { padding:0;border:var(--ui-line);width:min(1100px,94vw);max-width:none;max-height:94dvh;border-radius:14px;background:var(--ui-paper);color:var(--ui-ink);box-shadow:0 30px 100px #071b2440; }
 .photo-viewer::backdrop { background:#1c302dcc;backdrop-filter:blur(6px); }
 .viewer-top { display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 18px;font-size:12px;border-bottom:var(--ui-line); }
@@ -96,3 +121,4 @@ html[lang="zh-CN"] .album-panel h2 { font-size:32px;letter-spacing:.06em; }
   .photo-viewer { width:96vw; }
 }
 @media(prefers-reduced-motion:reduce) { .album-panel,.photo-card,header .nav-icon { transition:none; } }
+.album-panel .album-title-row h2,html[lang="zh-CN"] .album-panel .album-title-row h2 { margin:0; }

@@ -4,6 +4,8 @@
 
 A personal travel journal built around an interactive, LEGO-style globe.
 
+Record a travel month per city using the subtle control beside the title. Browse years, select a month, then click outside to save and close; Escape cancels the draft. The clear control removes the month when you dismiss the picker. Months use localStorage on this device only; clearing site data removes them. Earlier arrival dates are displayed as their year/month. Currently one visit month per city is supported.
+
 [Explore the live site](https://bbeas.github.io/pocket-atlas/)
 
 ## Run locally

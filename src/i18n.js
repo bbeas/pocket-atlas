@@ -1,5 +1,9 @@
 export const messages = {
   en: {
+    previousYear: 'Previous year', nextYear: 'Next year',
+    visitDates: 'Travel memories', addVisitMonth: 'Add date', visitYear: 'Year', visitMonth: 'Month', clearVisitMonth: 'Clear',
+    visitSaveError: 'Dates could not be saved. Please check your browser storage settings.',
+    visitLoadError: 'Saved dates could not be read. Reopen this place to try again.',
     pageTitle: 'Pocket Atlas — A Personal Travel Journal',
     description: 'A personal travel journal, one little brick-built place at a time.',
     travelIndex: 'Travel Trails', chooseDestination: 'Little stops along the way', mainMenu: 'Main menu', switchLanguage: 'Switch to Chinese',
@@ -23,6 +27,10 @@ export const messages = {
     skippedFiles: 'Some files were skipped because of their format, size or the 10-photo limit.',
   },
   zh: {
+    previousYear: '上一年', nextYear: '下一年',
+    visitDates: '旅行时光', addVisitMonth: '添加日期', visitYear: '年份', visitMonth: '月份', clearVisitMonth: '清除',
+    visitSaveError: '日期未能保存，请检查浏览器存储设置。',
+    visitLoadError: '暂时无法读取已保存的日期，请重新打开此地点重试。',
     pageTitle: 'Pocket Atlas — 私人旅行手记',
     description: 'Pocket Atlas，一本在积木地球上慢慢展开的私人旅行手记。',
     travelIndex: '旅行足迹', chooseDestination: '一路走过的小小风景', mainMenu: '主菜单', switchLanguage: '切换到 English',

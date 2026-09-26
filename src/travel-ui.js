@@ -1,19 +1,21 @@
 // DOM UI stays independent of Three.js. Personal photos are saved only on this device.
 import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=local-photos';
 import { canBrowsePlace } from './destination-policy.js';
+import { createVisitDates } from './visit-dates.js';
 import { readPhotos, appendPhotos, deletePhoto, preparePhoto, MAX_PHOTOS } from './photo-storage.js';
 export function createTravelUI({ destinations, onSelect, onClose }) {
   const panel=document.createElement('aside');
   panel.className='album-panel';panel.hidden=true;panel.inert=true;
   panel.setAttribute('aria-labelledby','album-title');
   panel.innerHTML=`<div class="album-top"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z M9 3v16M15 5v16"/></svg>POCKET ATLAS</span><button class="round-button" data-close data-i18n-label="closeAlbum">×</button></div>
-    <div class="album-heading"><h2 id="album-title" tabindex="-1"></h2><p class="album-coordinate"></p><div class="city-tabs" data-i18n-label="chooseCity"></div></div>
+    <div class="album-heading"><div class="album-title-row"><h2 id="album-title" tabindex="-1"></h2></div><p class="album-coordinate"></p><div class="city-tabs" data-i18n-label="chooseCity"></div></div>
     <div class="album-body"><div class="album-meta"><span data-i18n="album"></span><span data-count></span></div>
     <div class="photo-grid"></div><div class="album-empty"></div>
     <div class="album-footer"><button class="preview-button" data-preview data-i18n="preview"></button>
     <input type="file" accept="image/*" multiple hidden>
     <p class="album-notice" data-i18n="previewNotice"></p><p class="album-notice" role="status" data-status></p></div></div>`;
   document.body.append(panel);
+  const visitDates=createVisitDates(panel.querySelector('.album-title-row'));
   const viewer=document.createElement('dialog');viewer.className='photo-viewer';
   viewer.dataset.i18nLabel='photoViewer';
   viewer.innerHTML=`<div class="viewer-top"><span data-position></span><button class="round-button" data-close data-i18n-label="closePhoto">×</button></div>
@@ -21,7 +23,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
     <div class="viewer-footer"><button data-prev data-i18n-label="previous">←</button><p class="viewer-caption"></p><button data-next data-i18n-label="next">→</button></div><button class="remove-photo" data-remove data-i18n="removePhoto" hidden></button>`;
   document.body.append(viewer);
   const title=panel.querySelector('h2'),grid=panel.querySelector('.photo-grid'),empty=panel.querySelector('.album-empty');
-  const tabs=panel.querySelector('.city-tabs'),input=panel.querySelector('input'),status=panel.querySelector('[data-status]');
+  const tabs=panel.querySelector('.city-tabs'),input=panel.querySelector('input[type="file"]'),status=panel.querySelector('[data-status]');
   let active=null,city='',manifest=null,loadError=false,photos=[],photoIndex=0,lastCard=null,statusMessage=null;
   const captionFor=(photo,index)=>localizedContent(photo.caption)||`${placeName(city)} · ${index+1}`;
   const localAlbums=new Map();
@@ -73,13 +75,14 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   function getPhotos() {return [...publishedPhotos(),...(localAlbums.get(key())||[])];}
   function render() {
     if(!active)return;
+    visitDates.render(key());
     photos=getPhotos();grid.replaceChildren();empty.replaceChildren();
     title.textContent=placeName(active.name);
     status.textContent=localErrors.has(key())?t('storageUnavailable'):statusMessage?t(statusMessage.key,statusMessage)+(statusMessage.skipped?' '+t('skippedFiles'):''):'';
     addButton.disabled=busy||!localAlbums.has(key())||localErrors.has(key())||(manifest===null&&!loadError);
     addButton.textContent=t(busy?'saving':'preview');
     addButton.setAttribute('aria-busy',String(busy));
-    panel.querySelector('[data-count]').textContent=t(photos.length===1?'countOne':'count',{count:String(photos.length).padStart(2,'0')});
+    panel.querySelector('[data-count]').textContent=t(photos.length===1?'countOne':'count',{count:String(photos.length)});
     tabs.replaceChildren();tabs.hidden=active.cities.length<2;
     for(const name of active.cities) {
       const button=document.createElement('button');button.textContent=placeName(name);button.setAttribute('aria-pressed',String(city===name));
@@ -178,7 +181,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
   placesButton.onclick=()=>{menu.hidden=!menu.hidden;placesButton.setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button').focus();};
   document.addEventListener('pointerdown',event=>{if(!menu.contains(event.target)&&!placesButton.contains(event.target))hideMenu();});
   // Canvas taps are handled by the globe, where landmark selection takes priority.
-  const outsideAlbum=target=>target instanceof Element&&!panel.contains(target)&&!viewer.contains(target)&&!menu.contains(target)&&!target.closest('canvas,nav,button,a,input,select,textarea');
+  const outsideAlbum=target=>target instanceof Element&&!panel.contains(target)&&!viewer.contains(target)&&!menu.contains(target)&&!target.closest('canvas,nav,button,a,input,select,textarea,.visit-editor');
   let outsidePress=null;
   document.addEventListener('pointerdown',event=>{
     outsidePress=event.isPrimary&&event.button===0&&active&&!viewer.open&&outsideAlbum(event.target)
@@ -221,7 +224,7 @@ export function createTravelUI({ destinations, onSelect, onClose }) {
       panel.querySelector('.album-coordinate').textContent=`${Math.abs(place.lat).toFixed(2)}° ${place.lat<0?'S':'N'}  /  ${Math.abs(place.lon).toFixed(2)}° ${place.lon<0?'W':'E'}`;
       panel.hidden=false;panel.inert=true;panel.classList.remove('is-open');render();loadLocal(key(),true);panel.scrollTop=0;},
     show(){if(!active)return;panel.inert=false;panel.classList.add('is-open');panel.querySelector('[data-close]').focus({preventScroll:true});},
-    close(){if(viewer.open)viewer.close();active=null;updateMenuSelection();panel.inert=true;panel.classList.remove('is-open');},
+    close(){if(viewer.open)viewer.close();active=null;visitDates.reset();updateMenuSelection();panel.inert=true;panel.classList.remove('is-open');},
     isModalOpen:()=>viewer.open,
     viewport(){return matchMedia('(max-width:760px)').matches?{left:0,top:90,width:innerWidth,height:Math.max(80,innerHeight*.54-90)}:
       {left:0,top:98,width:innerWidth-panel.offsetWidth-44,height:Math.max(80,innerHeight-120)};}

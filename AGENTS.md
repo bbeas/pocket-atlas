@@ -18,6 +18,12 @@
 
 ## Workflow
 
+- Display saved travel months as `YYYY / MM` in Chinese and abbreviated month/year in English. Photo counts use unpadded numbers (`0 张`, `1 photo`), unlike the menu's numbered entries.
+
+- Align the compact travel date with the destination title's text baseline, on the right. Use “添加日期” / “Add date”, “清除” / “Clear”, and the picker heading “旅行时光” / “Travel memories”. Do not show an outside-click saving instruction; preserve that behavior.
+
+- Travel time is a single year/month per destination/city stored in localStorage, subtly right-aligned in the title row. Use a cream/mint outlined month-grid popover with yellow selection and year navigation. Save and close on outside click (no Save button); Escape cancels the draft. Preserve older arrival months, bilingual labels and honest storage errors. Photos remain in IndexedDB; nothing is uploaded.
+
 - English is the primary language for code comments, documentation, metadata and default UI text unless explicitly marked otherwise. `README.md` is English; `README.zh-CN.md` is Chinese, with reciprocal language links at the top. Keep both documents in sync. Explicit Chinese translations, localization tests, stable legacy city keys and user-authored captions are exceptions; do not translate data identifiers or user content indiscriminately.
 
 - Work in `/Users/beibei/workdir/pocket-atlas`, remote `https://github.com/bbeas/pocket-atlas.git`. The old `bbeas.github.io` and Documents/Codex copies are retained but no longer the active travel-project workspace.
