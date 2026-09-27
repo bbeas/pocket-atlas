@@ -16,18 +16,19 @@ export function placePreview(bounds, width, height, viewportWidth, viewportHeigh
 }
 export function createTouchPreview({ onOpen }) {
   const card=document.createElement('div');card.className='touch-preview';card.hidden=true;
-  card.innerHTML='<span class="touch-preview-name"></span><button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="15" height="15" rx="3"/><path d="M15 2H6a4 4 0 0 0-4 4v9M5 16l4-4 4 4 3-3 4 4"/><circle cx="15.5" cy="9.5" r="1.2"/></svg></button>';
+  card.innerHTML='<button type="button" class="touch-preview-action"><span class="touch-preview-name"></span><span class="touch-preview-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="15" height="15" rx="3"/><path d="M15 2H6a4 4 0 0 0-4 4v9M5 16l4-4 4 4 3-3 4 4"/><circle cx="15.5" cy="9.5" r="1.2"/></svg></span></button><span class="touch-preview-static" hidden></span>';
+  const action=card.querySelector('button'),name=card.querySelector('.touch-preview-name'),staticName=card.querySelector('.touch-preview-static');
   const hint=document.createElement('p');hint.className='touch-discovery-hint';hint.hidden=true;hint.setAttribute('role','status');
   document.body.append(card,hint);
   let place=null;
   function translate(){
-    if(place){card.querySelector('span').textContent=placeName(place.name);card.querySelector('button').setAttribute('aria-label',t('explorePhotos'));}
+    if(place){name.textContent=staticName.textContent=placeName(place.name);action.setAttribute('aria-label',`${placeName(place.name)}: ${t('explorePhotos')}`);}
     hint.textContent=t('touchDiscover');
   }
-  card.querySelector('button').onclick=()=>{if(place&&canBrowsePlace(place))onOpen(place.id);};
+  action.onclick=()=>{if(place&&canBrowsePlace(place))onOpen(place.id);};
   onLanguageChange(translate);translate();
   return {
-    show(next){place=next;translate();card.querySelector('button').hidden=!canBrowsePlace(place);card.style.visibility='hidden';card.hidden=false;},
+    show(next){place=next;translate();action.hidden=!canBrowsePlace(place);staticName.hidden=canBrowsePlace(place);card.style.visibility='hidden';card.hidden=false;},
     hide(){place=null;card.hidden=true;},
     position(bounds){
       const width=card.offsetWidth,height=card.offsetHeight;
