@@ -1,5 +1,6 @@
 export const messages = {
   en: {
+    explorePhotos: 'View photos →', touchDiscover: 'Tap a place. Discover a little journey.',
     previousYear: 'Previous year', nextYear: 'Next year',
     visitDates: 'Travel memories', addVisitMonth: 'Add date', visitYear: 'Year', visitMonth: 'Month', clearVisitMonth: 'Clear',
     visitSaveError: 'Dates could not be saved. Please check your browser storage settings.',
@@ -27,6 +28,7 @@ export const messages = {
     skippedFiles: 'Some files were skipped because of their format, size or the 10-photo limit.',
   },
   zh: {
+    explorePhotos: '查看照片 →', touchDiscover: '轻点地点，发现旅途。',
     previousYear: '上一年', nextYear: '下一年',
     visitDates: '旅行时光', addVisitMonth: '添加日期', visitYear: '年份', visitMonth: '月份', clearVisitMonth: '清除',
     visitSaveError: '日期未能保存，请检查浏览器存储设置。',

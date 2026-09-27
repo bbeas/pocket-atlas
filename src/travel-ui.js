@@ -1,7 +1,7 @@
 // DOM UI stays independent of Three.js. Personal photos are saved only on this device.
-import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=local-photos';
+import { t, placeName, localizedContent, translatePage, onLanguageChange } from './i18n.js?v=touch-exploration';
 import { canBrowsePlace } from './destination-policy.js';
-import { createVisitDates } from './visit-dates.js';
+import { createVisitDates } from './visit-dates.js?v=touch-exploration';
 import { readPhotos, appendPhotos, deletePhoto, preparePhoto, MAX_PHOTOS } from './photo-storage.js';
 export function createTravelUI({ destinations, onSelect, onClose }) {
   const panel=document.createElement('aside');

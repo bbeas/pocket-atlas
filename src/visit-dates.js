@@ -1,4 +1,4 @@
-import { t, getLanguage } from './i18n.js?v=local-photos';
+import { t, getLanguage } from './i18n.js?v=touch-exploration';
 
 const storageKey = album => `pocket-atlas-visit:${album}`;
 export const validVisitMonth = month => typeof month === 'string' && (month === '' || /^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(month));

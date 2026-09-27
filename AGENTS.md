@@ -18,6 +18,10 @@
 
 ## Workflow
 
+- Touch landmark preview uses a small translucent pill with the place name and an icon-only photo button (retain an accessible label and 44px hit area). Position it centered with its top 2 CSS pixels above the projected bottom of the RESTING model, using its original local bounds, rest rotation and home position. This slight overlap brings it closer to the lifted landmark. Compute once per selection and keep fixed through animation; only viewport resize or another selection repositions it. Clamp to screen edges only: do not add scatter padding or relocate around neighboring buildings/to distant sky. Hide until its initial position is ready.
+
+- Touch/pen exploration uses two steps: tap a visited landmark to scatter and show its name plus View photos; only that button opens the album. Blank taps and drag gestures dismiss previews. Desktop mouse hover/click stays unchanged. Shanghai remains preview-only without a photo button. Show a single restrained discovery hint/landmark animation on the first touch visit, interrupt it on interaction, and respect reduced motion.
+
 - Display saved travel months as `YYYY / MM` in Chinese and abbreviated month/year in English. Photo counts use unpadded numbers (`0 张`, `1 photo`), unlike the menu's numbered entries.
 
 - Align the compact travel date with the destination title's text baseline, on the right. Use “添加日期” / “Add date”, “清除” / “Clear”, and the picker heading “旅行时光” / “Travel memories”. Do not show an outside-click saving instruction; preserve that behavior.
